@@ -11,10 +11,9 @@ const errorMiddleware = createMiddleware().server(async ({ next }) => {
       throw error;
     }
     console.error(error);
-    const msg = error instanceof Error ? (error.stack ?? error.message) : String(error);
-    return new Response("SSR_DEBUG:\n" + msg, {
+    return new Response(renderErrorPage(), {
       status: 500,
-      headers: { "content-type": "text/plain; charset=utf-8" },
+      headers: { "content-type": "text/html; charset=utf-8" },
     });
   }
 });
