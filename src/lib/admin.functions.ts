@@ -34,7 +34,7 @@ export const updateUserAdmin = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const patch: Record<string, unknown> = {};
+    const patch: { channel?: "A" | "B"; status?: "active" | "disabled" } = {};
     if (data.channel) patch.channel = data.channel;
     if (data.status) patch.status = data.status;
     const { error } = await supabaseAdmin.from("profiles").update(patch).eq("id", data.id);

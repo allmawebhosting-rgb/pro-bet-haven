@@ -45,7 +45,6 @@ export const updateSiteSettings = createServerFn({ method: "POST" })
     accent_color: string;
   }) => d)
   .handler(async ({ data, context }) => {
-    const { data: isAdmin } = await context.supabase.rpc as never;
     // Verify admin via user_roles table (RLS lets user read own roles)
     const { data: roles } = await context.supabase
       .from("user_roles")
