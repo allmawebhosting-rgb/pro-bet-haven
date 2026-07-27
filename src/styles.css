@@ -102,9 +102,11 @@ html, body {
   }
   body {
     background:
-      radial-gradient(ellipse at top, oklch(0.82 0.14 85 / 8%), transparent 60%),
-      radial-gradient(ellipse at bottom left, oklch(0.62 0.13 75 / 6%), transparent 55%),
-      var(--color-background);
+      radial-gradient(ellipse at top, oklch(0.82 0.14 85 / 10%), transparent 60%),
+      radial-gradient(ellipse at bottom left, oklch(0.62 0.13 75 / 8%), transparent 55%),
+      linear-gradient(120deg, oklch(0.08 0.005 60), oklch(0.10 0.012 70), oklch(0.08 0.005 60));
+    background-size: 100% 100%, 100% 100%, 300% 300%;
+    animation: gradient-pan 22s ease-in-out infinite;
     color: var(--color-foreground);
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
