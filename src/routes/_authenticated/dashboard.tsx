@@ -40,9 +40,32 @@ function Dashboard() {
   const profileQ = useQuery({
     queryKey: ["profile"],
     queryFn: async (): Promise<Profile | null> => {
-      const { data } = await supabase.from("profiles").select("*").maybeSingle();
+      const { data: userData } = await supabase.auth.getUser();
+      const uid = userData.user?.id;
+      if (!uid) return null;
+      let { data, error } = await supabase.from("profiles").select("*").eq("id", uid).maybeSingle();
+      if (error) throw error;
+      if (!data) {
+        // Fallback: trigger may have failed — provision profile on the fly.
+        const meta = (userData.user?.user_metadata ?? {}) as { full_name?: string; whatsapp?: string };
+        const assigned: "A" | "B" = Math.random() < 0.5 ? "A" : "B";
+        const { data: inserted, error: insErr } = await supabase
+          .from("profiles")
+          .insert({
+            id: uid,
+            full_name: meta.full_name ?? "Member",
+            whatsapp: meta.whatsapp ?? "",
+            channel: assigned,
+          })
+          .select("*")
+          .maybeSingle();
+        if (insErr) throw insErr;
+        data = inserted;
+      }
       return (data as Profile) ?? null;
     },
+    retry: 2,
+    retryDelay: 500,
   });
 
   const channel = profileQ.data?.channel;
