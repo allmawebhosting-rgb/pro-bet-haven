@@ -85,6 +85,15 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  return (
+    <QueryClientProvider client={queryClient}>
+      <RootInner />
+    </QueryClientProvider>
+  );
+}
+
+function RootInner() {
+  const { queryClient } = Route.useRouteContext();
   const { data } = useQuery(settingsQuery);
   const router = useRouter();
 
@@ -99,11 +108,9 @@ function RootComponent() {
   }, [router, queryClient]);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <SiteSettingsProvider settings={(data as SiteSettings) ?? undefined!}>
-        <Outlet />
-        <Toaster theme="dark" position="top-center" richColors />
-      </SiteSettingsProvider>
-    </QueryClientProvider>
+    <SiteSettingsProvider settings={(data as SiteSettings) ?? undefined!}>
+      <Outlet />
+      <Toaster theme="dark" position="top-center" richColors />
+    </SiteSettingsProvider>
   );
 }
