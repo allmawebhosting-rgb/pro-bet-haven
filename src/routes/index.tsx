@@ -12,7 +12,7 @@ export const Route = createFileRoute("/")({
       { title: "Aurum — Premium Sports Predictions" },
       { name: "description", content: "A private members' circle for premium, carefully researched football predictions. Join today." },
       { property: "og:title", content: "Aurum — Premium Sports Predictions" },
-      { property: "og:description", content: "Premium football predictions for a private members' circle." },
+      { property: "og:description", content: "A private members' circle for premium, carefully researched football predictions. Join today." },
     ],
   }),
   component: Landing,
