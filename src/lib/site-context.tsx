@@ -26,10 +26,10 @@ export function SiteSettingsProvider({
   settings,
   children,
 }: {
-  settings: SiteSettings;
+  settings: SiteSettings | undefined | null;
   children: ReactNode;
 }) {
-  return <Ctx.Provider value={{ settings }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ settings: settings ?? defaultSettings }}>{children}</Ctx.Provider>;
 }
 
 export function useSiteSettings() {
