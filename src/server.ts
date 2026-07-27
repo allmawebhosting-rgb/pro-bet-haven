@@ -52,10 +52,9 @@ export default {
       return await normalizeCatastrophicSsrResponse(response);
     } catch (error) {
       console.error(error);
-      const msg = error instanceof Error ? (error.stack ?? error.message) : String(error);
-      return new Response("SSR_ERROR:\n" + msg, {
+      return new Response(renderErrorPage(), {
         status: 500,
-        headers: { "content-type": "text/plain; charset=utf-8" },
+        headers: { "content-type": "text/html; charset=utf-8" },
       });
     }
   },
