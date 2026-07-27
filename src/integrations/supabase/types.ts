@@ -14,16 +14,195 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      announcements: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          target: Database["public"]["Enums"]["announcement_target"]
+          title: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          target?: Database["public"]["Enums"]["announcement_target"]
+          title: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          target?: Database["public"]["Enums"]["announcement_target"]
+          title?: string
+        }
+        Relationships: []
+      }
+      channel_settings: {
+        Row: {
+          channel: Database["public"]["Enums"]["channel_code"]
+          next_release_at: string
+          release_interval_minutes: number
+          updated_at: string
+        }
+        Insert: {
+          channel: Database["public"]["Enums"]["channel_code"]
+          next_release_at?: string
+          release_interval_minutes?: number
+          updated_at?: string
+        }
+        Update: {
+          channel?: Database["public"]["Enums"]["channel_code"]
+          next_release_at?: string
+          release_interval_minutes?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      predictions: {
+        Row: {
+          away_team: string
+          channel: Database["public"]["Enums"]["channel_code"]
+          confidence: number
+          created_at: string
+          home_team: string
+          id: string
+          kickoff_at: string
+          league: string
+          match_name: string
+          odds: number | null
+          prediction: string
+          published: boolean
+          release_at: string
+        }
+        Insert: {
+          away_team: string
+          channel: Database["public"]["Enums"]["channel_code"]
+          confidence?: number
+          created_at?: string
+          home_team: string
+          id?: string
+          kickoff_at: string
+          league: string
+          match_name: string
+          odds?: number | null
+          prediction: string
+          published?: boolean
+          release_at?: string
+        }
+        Update: {
+          away_team?: string
+          channel?: Database["public"]["Enums"]["channel_code"]
+          confidence?: number
+          created_at?: string
+          home_team?: string
+          id?: string
+          kickoff_at?: string
+          league?: string
+          match_name?: string
+          odds?: number | null
+          prediction?: string
+          published?: boolean
+          release_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          channel: Database["public"]["Enums"]["channel_code"]
+          created_at: string
+          full_name: string
+          id: string
+          last_login: string | null
+          status: Database["public"]["Enums"]["user_status"]
+          whatsapp: string
+        }
+        Insert: {
+          channel: Database["public"]["Enums"]["channel_code"]
+          created_at?: string
+          full_name: string
+          id: string
+          last_login?: string | null
+          status?: Database["public"]["Enums"]["user_status"]
+          whatsapp: string
+        }
+        Update: {
+          channel?: Database["public"]["Enums"]["channel_code"]
+          created_at?: string
+          full_name?: string
+          id?: string
+          last_login?: string | null
+          status?: Database["public"]["Enums"]["user_status"]
+          whatsapp?: string
+        }
+        Relationships: []
+      }
+      site_settings: {
+        Row: {
+          accent_color: string
+          id: number
+          logo_url: string | null
+          primary_color: string
+          site_name: string
+          tagline: string
+          updated_at: string
+        }
+        Insert: {
+          accent_color?: string
+          id?: number
+          logo_url?: string | null
+          primary_color?: string
+          site_name?: string
+          tagline?: string
+          updated_at?: string
+        }
+        Update: {
+          accent_color?: string
+          id?: number
+          logo_url?: string | null
+          primary_color?: string
+          site_name?: string
+          tagline?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      announcement_target: "all" | "A" | "B"
+      app_role: "admin" | "user"
+      channel_code: "A" | "B"
+      user_status: "active" | "disabled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +329,11 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      announcement_target: ["all", "A", "B"],
+      app_role: ["admin", "user"],
+      channel_code: ["A", "B"],
+      user_status: ["active", "disabled"],
+    },
   },
 } as const
