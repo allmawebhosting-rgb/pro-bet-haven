@@ -129,25 +129,88 @@ html, body {
   box-shadow: var(--shadow-luxury);
 }
 
+@keyframes gradient-pan {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes aurora-drift {
+  0%   { transform: translate3d(-4%, -2%, 0) rotate(0deg);   opacity: 0.75; }
+  50%  { transform: translate3d(4%, 3%, 0)  rotate(180deg);  opacity: 1; }
+  100% { transform: translate3d(-4%, -2%, 0) rotate(360deg); opacity: 0.75; }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
 @utility gold-text {
-  background: var(--gradient-gold);
+  background: linear-gradient(
+    120deg,
+    oklch(0.9 0.09 90) 0%,
+    oklch(0.72 0.14 78) 25%,
+    oklch(0.98 0.05 95) 50%,
+    oklch(0.72 0.14 78) 75%,
+    oklch(0.55 0.12 65) 100%
+  );
+  background-size: 300% 300%;
   background-clip: text;
   -webkit-background-clip: text;
   color: transparent;
+  animation: gradient-pan 8s ease-in-out infinite;
 }
 
 @utility gold-bg {
-  background: var(--gradient-gold);
+  background: linear-gradient(
+    120deg,
+    oklch(0.9 0.09 90) 0%,
+    oklch(0.72 0.14 78) 30%,
+    oklch(0.55 0.12 65) 60%,
+    oklch(0.72 0.14 78) 100%
+  );
+  background-size: 250% 250%;
   color: var(--primary-foreground);
+  animation: gradient-pan 6s ease-in-out infinite;
+}
+
+@utility animated-gradient {
+  background: linear-gradient(
+    120deg,
+    oklch(0.12 0.008 60) 0%,
+    oklch(0.18 0.02 70) 25%,
+    oklch(0.14 0.03 80) 50%,
+    oklch(0.18 0.02 70) 75%,
+    oklch(0.12 0.008 60) 100%
+  );
+  background-size: 300% 300%;
+  animation: gradient-pan 14s ease-in-out infinite;
+}
+
+@utility aurora {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+@utility aurora {
+  &::before {
+    content: "";
+    position: absolute;
+    inset: -30%;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(closest-side at 30% 30%, oklch(0.82 0.14 85 / 22%), transparent 70%),
+      radial-gradient(closest-side at 70% 40%, oklch(0.62 0.13 75 / 18%), transparent 70%),
+      radial-gradient(closest-side at 50% 80%, oklch(0.9 0.09 90 / 14%), transparent 70%);
+    filter: blur(40px);
+    animation: aurora-drift 18s ease-in-out infinite;
+  }
 }
 
 @utility hairline {
   border-top: 1px solid oklch(0.82 0.14 85 / 20%);
-}
-
-@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
 }
 
 @utility shimmer {
