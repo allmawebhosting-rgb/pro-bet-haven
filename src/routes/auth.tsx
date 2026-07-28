@@ -67,10 +67,13 @@ function AuthPage() {
       if (error) throw error;
       navigate({ to: "/dashboard" });
     } catch (err) {
-      toast.error("No account found. Please register first.");
+      const message = err instanceof Error ? err.message : "";
+      const invalid = /invalid login credentials|invalid credentials/i.test(message);
+      toast.error(invalid ? "No account found. Please register first." : message || "Sign-in failed");
     } finally {
       setLoading(false);
     }
+
   }
 
   return (
