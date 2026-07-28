@@ -3,24 +3,29 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  LayoutDashboard, ListChecks, Users, Megaphone, Radio, Settings as SettingsIcon,
+  Plus, X, Crown, Search,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Logo } from "@/components/Logo";
 import {
   listUsersAdmin, updateUserAdmin, upsertPredictionAdmin, deletePredictionAdmin,
   updateChannelSettingsAdmin, createAnnouncementAdmin, grantAdminSelf, adminAnalytics,
+  setMemberVipAdmin,
 } from "@/lib/admin.functions";
 import { updateSiteSettings } from "@/lib/site.functions";
 import { useSiteSettings } from "@/lib/site-context";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
-    meta: [{ title: "Admin — Aurum" }, { name: "robots", content: "noindex" }],
+    meta: [{ title: "Console — Aurum Fixed Admin" }, { name: "robots", content: "noindex" }],
   }),
   component: AdminPage,
 });
 
-type Tab = "predictions" | "users" | "announcements" | "settings" | "channels";
+type Tab = "overview" | "predictions" | "users" | "announcements" | "channels" | "settings";
 
 function AdminPage() {
   const qc = useQueryClient();
@@ -46,16 +51,16 @@ function AdminPage() {
   if (!isAdmin) {
     return (
       <div className="min-h-screen grid place-items-center p-4">
-        <div className="glass-strong rounded-3xl p-8 max-w-md w-full">
+        <div className="card-fixed rounded-3xl p-8 max-w-md w-full gold-ring">
           <p className="text-xs uppercase tracking-[0.25em] text-gold text-center">Admin bootstrap</p>
           <h1 className="mt-2 font-display text-3xl text-center">First-time setup</h1>
           <p className="mt-2 text-sm text-muted-foreground text-center">
-            Enter the founder setup code to become the first admin. This is only available before any admin exists.
+            Enter the founder setup code to become the first admin.
           </p>
           <div className="mt-6 space-y-3">
             <input
               type="password" value={secret} onChange={(e) => setSecret(e.target.value)}
-              className="w-full rounded-xl bg-surface-2 border border-border px-4 py-3 outline-none focus:border-gold"
+              className={inputCls}
               placeholder="Setup code"
             />
             <button
@@ -76,35 +81,97 @@ function AdminPage() {
   return <AdminShell />;
 }
 
+const navItems: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
+  { id: "overview", label: "Overview", icon: LayoutDashboard },
+  { id: "predictions", label: "Fixed matches", icon: ListChecks },
+  { id: "users", label: "Members", icon: Users },
+  { id: "announcements", label: "Broadcasts", icon: Megaphone },
+  { id: "channels", label: "Channels", icon: Radio },
+  { id: "settings", label: "Branding", icon: SettingsIcon },
+];
+
 function AdminShell() {
-  const [tab, setTab] = useState<Tab>("predictions");
+  const [tab, setTab] = useState<Tab>("overview");
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-40 border-b border-border/40 backdrop-blur-xl bg-background/70">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 h-16 flex items-center justify-between">
           <Logo />
-          <span className="rounded-full glass px-3 py-1.5 text-xs uppercase tracking-widest text-gold">Admin</span>
+          <div className="flex items-center gap-2">
+            <span className="rounded-full gold-bg px-3 py-1 text-[10px] font-bold uppercase tracking-widest">Console</span>
+            <Link to="/dashboard" className="rounded-full glass px-3 py-1.5 text-xs hover:border-gold/40">Dashboard</Link>
+          </div>
         </div>
       </header>
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 py-8">
-        <div className="glass rounded-full p-1 inline-flex gap-1 overflow-x-auto max-w-full mb-8">
-          {(["predictions", "channels", "users", "announcements", "settings"] as Tab[]).map((t) => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={`px-4 py-2 rounded-full text-sm capitalize transition whitespace-nowrap ${
-                tab === t ? "gold-bg text-primary-foreground" : "text-muted-foreground hover:text-foreground"
-              }`}
-            >{t}</button>
-          ))}
-        </div>
-        <motion.div key={tab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-          {tab === "predictions" && <PredictionsTab />}
-          {tab === "channels" && <ChannelsTab />}
-          {tab === "users" && <UsersTab />}
-          {tab === "announcements" && <AnnouncementsTab />}
-          {tab === "settings" && <SettingsTab />}
-        </motion.div>
+
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 py-8 grid gap-8 lg:grid-cols-[240px_1fr]">
+        {/* Sidebar */}
+        <aside>
+          <nav className="card-noir rounded-2xl p-2 space-y-0.5 lg:sticky lg:top-24 flex lg:flex-col overflow-x-auto">
+            {navItems.map((i) => (
+              <button
+                key={i.id}
+                onClick={() => setTab(i.id)}
+                className={`w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition whitespace-nowrap ${
+                  tab === i.id ? "gold-bg text-primary-foreground font-semibold" : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                }`}
+              >
+                <i.icon className="h-4 w-4 shrink-0" /> <span>{i.label}</span>
+              </button>
+            ))}
+          </nav>
+        </aside>
+
+        <main className="min-w-0">
+          <AnimatePresence mode="wait">
+            <motion.div key={tab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+              {tab === "overview" && <OverviewTab />}
+              {tab === "predictions" && <PredictionsTab />}
+              {tab === "channels" && <ChannelsTab />}
+              {tab === "users" && <UsersTab />}
+              {tab === "announcements" && <AnnouncementsTab />}
+              {tab === "settings" && <SettingsTab />}
+            </motion.div>
+          </AnimatePresence>
+        </main>
+      </div>
+    </div>
+  );
+}
+
+/* --- Overview --- */
+function OverviewTab() {
+  const analyticsFn = useServerFn(adminAnalytics);
+  const aq = useQuery({ queryKey: ["admin-analytics"], queryFn: () => analyticsFn() });
+  const predsQ = useQuery({
+    queryKey: ["admin-preds-count"],
+    queryFn: async () => (await supabase.from("predictions").select("id, published, tier")).data ?? [],
+  });
+  const live = (predsQ.data ?? []).filter((p) => p.published).length;
+  const vipCount = (predsQ.data ?? []).filter((p) => p.tier === "vip").length;
+
+  const cards = [
+    { l: "Total members", v: aq.data?.total ?? 0 },
+    { l: "Channel A", v: aq.data?.chA ?? 0 },
+    { l: "Channel B", v: aq.data?.chB ?? 0 },
+    { l: "Last 7 days", v: aq.data?.last7 ?? 0 },
+    { l: "Live picks", v: live },
+    { l: "VIP-only picks", v: vipCount },
+  ];
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <p className="text-xs uppercase tracking-[0.25em] text-gold">Console</p>
+        <h1 className="mt-1 font-display text-4xl sm:text-5xl">Operations at a glance.</h1>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {cards.map((s) => (
+          <div key={s.l} className="card-noir rounded-2xl p-5">
+            <div className="text-[10px] uppercase tracking-widest text-muted-foreground">{s.l}</div>
+            <div className="mt-2 font-display text-4xl gold-text tabular-nums">{s.v}</div>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -124,7 +191,7 @@ function PredictionsTab() {
   const deleteFn = useServerFn(deletePredictionAdmin);
   const upsertMut = useMutation({
     mutationFn: (d: Parameters<typeof upsertFn>[0]["data"]) => upsertFn({ data: d }),
-    onSuccess: () => { toast.success("Saved"); qc.invalidateQueries({ queryKey: ["admin-predictions"] }); },
+    onSuccess: () => { toast.success("Saved"); qc.invalidateQueries({ queryKey: ["admin-predictions"] }); setOpen(false); },
     onError: (e: Error) => toast.error(e.message),
   });
   const delMut = useMutation({
@@ -132,7 +199,8 @@ function PredictionsTab() {
     onSuccess: () => { toast.success("Deleted"); qc.invalidateQueries({ queryKey: ["admin-predictions"] }); },
   });
 
-  const [form, setForm] = useState({
+  const [open, setOpen] = useState(false);
+  const emptyForm = {
     id: undefined as string | undefined,
     channel: "A" as "A" | "B",
     match_name: "",
@@ -141,96 +209,148 @@ function PredictionsTab() {
     away_team: "",
     kickoff_at: "",
     prediction: "",
-    odds: "" as string,
-    confidence: 3,
+    odds: "",
+    confidence: 5,
     published: true,
     release_at: "",
-  });
+    tier: "vip" as "free" | "vip",
+  };
+  const [form, setForm] = useState(emptyForm);
+
+  function openNew() { setForm(emptyForm); setOpen(true); }
+  function openEdit(p: any) {
+    setForm({
+      id: p.id, channel: p.channel, match_name: p.match_name, league: p.league,
+      home_team: p.home_team, away_team: p.away_team,
+      kickoff_at: new Date(p.kickoff_at).toISOString().slice(0, 16),
+      prediction: p.prediction, odds: p.odds?.toString() ?? "",
+      confidence: p.confidence, published: p.published,
+      release_at: new Date(p.release_at).toISOString().slice(0, 16),
+      tier: p.tier ?? "vip",
+    });
+    setOpen(true);
+  }
 
   function submit() {
     if (!form.match_name || !form.home_team || !form.away_team || !form.kickoff_at) {
       toast.error("Fill in match details"); return;
     }
     upsertMut.mutate({
-      id: form.id,
-      channel: form.channel,
-      match_name: form.match_name,
-      league: form.league,
-      home_team: form.home_team,
-      away_team: form.away_team,
+      id: form.id, channel: form.channel, match_name: form.match_name, league: form.league,
+      home_team: form.home_team, away_team: form.away_team,
       kickoff_at: new Date(form.kickoff_at).toISOString(),
-      prediction: form.prediction,
-      odds: form.odds ? Number(form.odds) : null,
-      confidence: form.confidence,
-      published: form.published,
+      prediction: form.prediction, odds: form.odds ? Number(form.odds) : null,
+      confidence: form.confidence, published: form.published,
       release_at: form.release_at ? new Date(form.release_at).toISOString() : new Date().toISOString(),
+      tier: form.tier,
     });
   }
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[1fr_1.4fr]">
-      <div className="glass-strong rounded-2xl p-6">
-        <h2 className="font-display text-2xl mb-4">{form.id ? "Edit" : "Add"} prediction</h2>
-        <div className="space-y-3 text-sm">
-          <Field label="Channel">
-            <select value={form.channel} onChange={(e) => setForm({ ...form, channel: e.target.value as "A" | "B" })} className={inputCls}>
-              <option value="A">Channel A</option><option value="B">Channel B</option>
-            </select>
-          </Field>
-          <Field label="Match name"><input className={inputCls} value={form.match_name} onChange={(e) => setForm({ ...form, match_name: e.target.value })} /></Field>
-          <Field label="League"><input className={inputCls} value={form.league} onChange={(e) => setForm({ ...form, league: e.target.value })} /></Field>
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Home team"><input className={inputCls} value={form.home_team} onChange={(e) => setForm({ ...form, home_team: e.target.value })} /></Field>
-            <Field label="Away team"><input className={inputCls} value={form.away_team} onChange={(e) => setForm({ ...form, away_team: e.target.value })} /></Field>
-          </div>
-          <Field label="Kickoff"><input type="datetime-local" className={inputCls} value={form.kickoff_at} onChange={(e) => setForm({ ...form, kickoff_at: e.target.value })} /></Field>
-          <Field label="Prediction"><input className={inputCls} value={form.prediction} onChange={(e) => setForm({ ...form, prediction: e.target.value })} placeholder="e.g. Home win" /></Field>
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Odds"><input type="number" step="0.01" className={inputCls} value={form.odds} onChange={(e) => setForm({ ...form, odds: e.target.value })} /></Field>
-            <Field label="Confidence 1–5"><input type="number" min={1} max={5} className={inputCls} value={form.confidence} onChange={(e) => setForm({ ...form, confidence: Number(e.target.value) })} /></Field>
-          </div>
-          <Field label="Release at"><input type="datetime-local" className={inputCls} value={form.release_at} onChange={(e) => setForm({ ...form, release_at: e.target.value })} /></Field>
-          <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.published} onChange={(e) => setForm({ ...form, published: e.target.checked })} /> Published</label>
-          <div className="flex gap-2 pt-2">
-            <button onClick={submit} className="rounded-full gold-bg px-5 py-2 text-sm font-semibold">{form.id ? "Update" : "Create"}</button>
-            {form.id && <button onClick={() => setForm({ ...form, id: undefined })} className="rounded-full glass px-4 py-2 text-sm">New</button>}
-          </div>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h2 className="font-display text-3xl">Fixed matches</h2>
+          <p className="text-sm text-muted-foreground">Manage the slips shown in member feeds.</p>
+        </div>
+        <button onClick={openNew} className="rounded-full gold-bg px-4 py-2 text-sm font-semibold inline-flex items-center gap-1.5">
+          <Plus className="h-4 w-4" /> New match
+        </button>
+      </div>
+
+      <div className="card-noir rounded-2xl overflow-hidden">
+        <div className="grid grid-cols-[80px_1fr_100px_100px_120px] gap-3 px-5 py-3 text-[10px] uppercase tracking-widest text-gold border-b border-border/60">
+          <div>Ch</div><div>Match</div><div>Tier</div><div>Status</div><div className="text-right">Actions</div>
+        </div>
+        <div className="divide-y divide-border/40">
+          {(listQ.data ?? []).length === 0 && (
+            <div className="p-10 text-center text-sm text-muted-foreground">No matches yet — click "New match" to add one.</div>
+          )}
+          {(listQ.data ?? []).map((p: any) => (
+            <div key={p.id} className="grid grid-cols-[80px_1fr_100px_100px_120px] gap-3 px-5 py-4 items-center hover:bg-white/[0.02] transition">
+              <div className="text-xs text-gold font-semibold">Ch. {p.channel}</div>
+              <div className="min-w-0">
+                <div className="font-display text-base truncate">{p.home_team} vs {p.away_team}</div>
+                <div className="text-[10px] text-muted-foreground truncate uppercase tracking-widest">{p.league} · {new Date(p.kickoff_at).toLocaleString()}</div>
+              </div>
+              <div>
+                {p.tier === "free"
+                  ? <span className="rounded-full glass px-2 py-0.5 text-[10px] uppercase tracking-widest text-gold">Free</span>
+                  : <span className="rounded-full gold-bg px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest">VIP</span>}
+              </div>
+              <div>
+                {p.published
+                  ? <span className="text-xs text-emerald-400">● Live</span>
+                  : <span className="text-xs text-muted-foreground">○ Hidden</span>}
+              </div>
+              <div className="flex justify-end gap-2">
+                <button onClick={() => openEdit(p)} className="rounded-full glass px-3 py-1 text-[11px] hover:border-gold/40">Edit</button>
+                <button onClick={() => delMut.mutate(p.id)} className="rounded-full px-3 py-1 text-[11px] text-destructive border border-destructive/40">Del</button>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
-      <div className="space-y-3">
-        {(listQ.data ?? []).map((p) => (
-          <div key={p.id} className="glass rounded-2xl p-4 grid gap-2 sm:grid-cols-[1fr_auto] items-center">
-            <div className="min-w-0">
-              <div className="text-xs text-gold uppercase tracking-widest">Ch. {p.channel} · {p.league}</div>
-              <div className="font-display text-lg truncate">{p.home_team} vs {p.away_team}</div>
-              <div className="text-xs text-muted-foreground">
-                Kickoff: {new Date(p.kickoff_at).toLocaleString()} · Release: {new Date(p.release_at).toLocaleString()} ·{" "}
-                {p.published ? <span className="text-gold">Published</span> : <span>Hidden</span>}
+      {/* Slide-over form */}
+      <AnimatePresence>
+        {open && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => setOpen(false)}
+              className="fixed inset-0 z-50 bg-background/70 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
+              transition={{ type: "spring", damping: 30, stiffness: 250 }}
+              className="fixed right-0 top-0 bottom-0 z-50 w-full max-w-md overflow-y-auto card-noir rounded-l-3xl p-6 border-l border-gold/30"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="font-display text-2xl">{form.id ? "Edit" : "New"} fixed match</h3>
+                <button onClick={() => setOpen(false)} className="rounded-full glass p-2"><X className="h-4 w-4" /></button>
               </div>
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setForm({
-                  id: p.id, channel: p.channel, match_name: p.match_name, league: p.league,
-                  home_team: p.home_team, away_team: p.away_team,
-                  kickoff_at: new Date(p.kickoff_at).toISOString().slice(0, 16),
-                  prediction: p.prediction, odds: p.odds?.toString() ?? "",
-                  confidence: p.confidence, published: p.published,
-                  release_at: new Date(p.release_at).toISOString().slice(0, 16),
-                })}
-                className="rounded-full glass px-3 py-1.5 text-xs"
-              >Edit</button>
-              <button onClick={() => delMut.mutate(p.id)} className="rounded-full px-3 py-1.5 text-xs text-destructive border border-destructive/40">Delete</button>
-            </div>
-          </div>
-        ))}
-      </div>
+              <div className="space-y-3 text-sm">
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Channel">
+                    <select value={form.channel} onChange={(e) => setForm({ ...form, channel: e.target.value as "A" | "B" })} className={inputCls}>
+                      <option value="A">Channel A</option><option value="B">Channel B</option>
+                    </select>
+                  </Field>
+                  <Field label="Tier">
+                    <select value={form.tier} onChange={(e) => setForm({ ...form, tier: e.target.value as "free" | "vip" })} className={inputCls}>
+                      <option value="free">Free trial</option><option value="vip">VIP only</option>
+                    </select>
+                  </Field>
+                </div>
+                <Field label="Match name"><input className={inputCls} value={form.match_name} onChange={(e) => setForm({ ...form, match_name: e.target.value })} /></Field>
+                <Field label="League"><input className={inputCls} value={form.league} onChange={(e) => setForm({ ...form, league: e.target.value })} /></Field>
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Home team"><input className={inputCls} value={form.home_team} onChange={(e) => setForm({ ...form, home_team: e.target.value })} /></Field>
+                  <Field label="Away team"><input className={inputCls} value={form.away_team} onChange={(e) => setForm({ ...form, away_team: e.target.value })} /></Field>
+                </div>
+                <Field label="Kickoff"><input type="datetime-local" className={inputCls} value={form.kickoff_at} onChange={(e) => setForm({ ...form, kickoff_at: e.target.value })} /></Field>
+                <Field label="Prediction"><input className={inputCls} value={form.prediction} onChange={(e) => setForm({ ...form, prediction: e.target.value })} placeholder="e.g. Home & Over 2.5" /></Field>
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Odds"><input type="number" step="0.01" className={inputCls} value={form.odds} onChange={(e) => setForm({ ...form, odds: e.target.value })} /></Field>
+                  <Field label="Confidence 1–5"><input type="number" min={1} max={5} className={inputCls} value={form.confidence} onChange={(e) => setForm({ ...form, confidence: Number(e.target.value) })} /></Field>
+                </div>
+                <Field label="Release at"><input type="datetime-local" className={inputCls} value={form.release_at} onChange={(e) => setForm({ ...form, release_at: e.target.value })} /></Field>
+                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.published} onChange={(e) => setForm({ ...form, published: e.target.checked })} /> Published</label>
+                <div className="flex gap-2 pt-4">
+                  <button onClick={submit} disabled={upsertMut.isPending} className="rounded-full gold-bg px-5 py-2.5 text-sm font-semibold flex-1">{form.id ? "Update" : "Create"}</button>
+                  <button onClick={() => setOpen(false)} className="rounded-full glass px-5 py-2.5 text-sm">Cancel</button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
-/* --- Channels (timers) --- */
+/* --- Channels --- */
 function ChannelsTab() {
   const qc = useQueryClient();
   const q = useQuery({
@@ -244,10 +364,16 @@ function ChannelsTab() {
     onError: (e: Error) => toast.error(e.message),
   });
   return (
-    <div className="grid gap-6 md:grid-cols-2">
-      {(q.data ?? []).map((c) => (
-        <ChannelCard key={c.channel} item={c} onSave={(d) => mut.mutate(d)} />
-      ))}
+    <div className="space-y-6">
+      <div>
+        <h2 className="font-display text-3xl">Channels</h2>
+        <p className="text-sm text-muted-foreground">Countdown and release cadence per channel.</p>
+      </div>
+      <div className="grid gap-6 md:grid-cols-2">
+        {(q.data ?? []).map((c: any) => (
+          <ChannelCard key={c.channel} item={c} onSave={(d) => mut.mutate(d)} />
+        ))}
+      </div>
     </div>
   );
 }
@@ -255,8 +381,11 @@ function ChannelCard({ item, onSave }: { item: { channel: "A" | "B"; next_releas
   const [next, setNext] = useState(new Date(item.next_release_at).toISOString().slice(0, 16));
   const [interval, setInterval] = useState(item.release_interval_minutes);
   return (
-    <div className="glass-strong rounded-2xl p-6">
-      <h3 className="font-display text-2xl">Channel {item.channel}</h3>
+    <div className="card-noir rounded-2xl p-6">
+      <div className="flex items-center justify-between">
+        <h3 className="font-display text-2xl">Channel {item.channel}</h3>
+        <Radio className="h-5 w-5 text-gold" />
+      </div>
       <div className="mt-4 space-y-3">
         <Field label="Next release"><input type="datetime-local" className={inputCls} value={next} onChange={(e) => setNext(e.target.value)} /></Field>
         <Field label="Release interval (minutes)"><input type="number" className={inputCls} value={interval} onChange={(e) => setInterval(Number(e.target.value))} /></Field>
@@ -275,52 +404,68 @@ function UsersTab() {
   const listFn = useServerFn(listUsersAdmin);
   const q = useQuery({ queryKey: ["admin-users"], queryFn: () => listFn() });
   const updateFn = useServerFn(updateUserAdmin);
+  const vipFn = useServerFn(setMemberVipAdmin);
   const mut = useMutation({
     mutationFn: (d: Parameters<typeof updateFn>[0]["data"]) => updateFn({ data: d }),
     onSuccess: () => { toast.success("Updated"); qc.invalidateQueries({ queryKey: ["admin-users"] }); },
   });
-  const analyticsFn = useServerFn(adminAnalytics);
-  const aq = useQuery({ queryKey: ["admin-analytics"], queryFn: () => analyticsFn() });
+  const vipMut = useMutation({
+    mutationFn: (d: { id: string; is_vip: boolean }) => vipFn({ data: d }),
+    onSuccess: () => { toast.success("VIP updated"); qc.invalidateQueries({ queryKey: ["admin-users"] }); },
+  });
   const [search, setSearch] = useState("");
-  const filtered = (q.data ?? []).filter((u) =>
+  const filtered = (q.data ?? []).filter((u: any) =>
     u.full_name.toLowerCase().includes(search.toLowerCase()) || u.whatsapp.includes(search)
   );
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-4">
-        {[
-          { l: "Total", v: aq.data?.total ?? 0 },
-          { l: "Channel A", v: aq.data?.chA ?? 0 },
-          { l: "Channel B", v: aq.data?.chB ?? 0 },
-          { l: "Last 7 days", v: aq.data?.last7 ?? 0 },
-        ].map((s) => (
-          <div key={s.l} className="glass rounded-2xl p-4">
-            <div className="text-xs uppercase tracking-widest text-muted-foreground">{s.l}</div>
-            <div className="mt-2 font-display text-3xl gold-text">{s.v}</div>
-          </div>
-        ))}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h2 className="font-display text-3xl">Members</h2>
+          <p className="text-sm text-muted-foreground">Toggle channel, status and VIP access.</p>
+        </div>
+        <div className="relative">
+          <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <input
+            placeholder="Search name or WhatsApp"
+            className={`${inputCls} pl-9 w-72 max-w-full`}
+            value={search} onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
       </div>
-      <input
-        placeholder="Search by name or WhatsApp"
-        className={inputCls} value={search} onChange={(e) => setSearch(e.target.value)}
-      />
-      <div className="space-y-2">
-        {filtered.map((u) => (
-          <div key={u.id} className="glass rounded-2xl p-4 grid gap-2 sm:grid-cols-[1fr_auto] items-center">
-            <div className="min-w-0">
-              <div className="font-display text-lg truncate">{u.full_name}</div>
-              <div className="text-xs text-muted-foreground">{u.whatsapp} · Joined {new Date(u.created_at).toLocaleDateString()}</div>
-            </div>
-            <div className="flex flex-wrap gap-2 items-center text-xs">
+
+      <div className="card-noir rounded-2xl overflow-hidden">
+        <div className="grid grid-cols-[1fr_140px_100px_100px_90px] gap-3 px-5 py-3 text-[10px] uppercase tracking-widest text-gold border-b border-border/60">
+          <div>Member</div><div>WhatsApp</div><div>Channel</div><div>Status</div><div className="text-right">VIP</div>
+        </div>
+        <div className="divide-y divide-border/40">
+          {filtered.length === 0 && (
+            <div className="p-10 text-center text-sm text-muted-foreground">No members match.</div>
+          )}
+          {filtered.map((u: any) => (
+            <div key={u.id} className="grid grid-cols-[1fr_140px_100px_100px_90px] gap-3 px-5 py-3 items-center hover:bg-white/[0.02]">
+              <div className="min-w-0">
+                <div className="font-display text-base truncate">{u.full_name}</div>
+                <div className="text-[10px] text-muted-foreground">Joined {new Date(u.created_at).toLocaleDateString()}</div>
+              </div>
+              <div className="text-xs text-muted-foreground truncate">{u.whatsapp}</div>
               <select value={u.channel} onChange={(e) => mut.mutate({ id: u.id, channel: e.target.value as "A" | "B" })} className={selectCls}>
                 <option value="A">A</option><option value="B">B</option>
               </select>
               <select value={u.status} onChange={(e) => mut.mutate({ id: u.id, status: e.target.value as "active" | "disabled" })} className={selectCls}>
                 <option value="active">Active</option><option value="disabled">Disabled</option>
               </select>
+              <div className="flex justify-end">
+                <button
+                  onClick={() => vipMut.mutate({ id: u.id, is_vip: !u.is_vip })}
+                  className={`rounded-full px-3 py-1 text-[10px] uppercase tracking-widest inline-flex items-center gap-1 ${u.is_vip ? "gold-bg font-bold" : "glass text-muted-foreground hover:border-gold/40"}`}
+                >
+                  <Crown className="h-3 w-3" /> {u.is_vip ? "VIP" : "Set"}
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -334,33 +479,41 @@ function AnnouncementsTab() {
     queryFn: async () => (await supabase.from("announcements").select("*").order("created_at", { ascending: false })).data ?? [],
   });
   const fn = useServerFn(createAnnouncementAdmin);
+  const [form, setForm] = useState<{ target: "all" | "A" | "B"; title: string; body: string }>({ target: "all", title: "", body: "" });
   const mut = useMutation({
     mutationFn: (d: Parameters<typeof fn>[0]["data"]) => fn({ data: d }),
     onSuccess: () => { toast.success("Sent"); qc.invalidateQueries({ queryKey: ["announcements-admin"] }); setForm({ target: "all", title: "", body: "" }); },
   });
-  const [form, setForm] = useState<{ target: "all" | "A" | "B"; title: string; body: string }>({ target: "all", title: "", body: "" });
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
-      <div className="glass-strong rounded-2xl p-6 space-y-3">
-        <h2 className="font-display text-2xl mb-2">New announcement</h2>
-        <Field label="Audience">
-          <select value={form.target} onChange={(e) => setForm({ ...form, target: e.target.value as "all" | "A" | "B" })} className={inputCls}>
-            <option value="all">Everyone</option>
-            <option value="A">Channel A only</option>
-            <option value="B">Channel B only</option>
-          </select>
-        </Field>
-        <Field label="Title"><input className={inputCls} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></Field>
-        <Field label="Body"><textarea rows={4} className={inputCls} value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} /></Field>
-        <button
-          onClick={() => mut.mutate(form)}
-          disabled={!form.title || !form.body}
-          className="rounded-full gold-bg px-5 py-2 text-sm font-semibold disabled:opacity-60"
-        >Send</button>
+    <div className="space-y-6">
+      <div>
+        <h2 className="font-display text-3xl">Broadcasts</h2>
+        <p className="text-sm text-muted-foreground">Push announcements to all members or a channel.</p>
       </div>
+      <div className="card-noir rounded-2xl p-6 space-y-3">
+        <div className="grid gap-3 sm:grid-cols-[160px_1fr]">
+          <Field label="Audience">
+            <select value={form.target} onChange={(e) => setForm({ ...form, target: e.target.value as "all" | "A" | "B" })} className={inputCls}>
+              <option value="all">Everyone</option>
+              <option value="A">Channel A</option>
+              <option value="B">Channel B</option>
+            </select>
+          </Field>
+          <Field label="Title"><input className={inputCls} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="New fixed match live" /></Field>
+        </div>
+        <Field label="Body"><textarea rows={3} className={inputCls} value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} placeholder="Write your broadcast..." /></Field>
+        <div>
+          <button
+            onClick={() => mut.mutate(form)}
+            disabled={!form.title || !form.body}
+            className="rounded-full gold-bg px-5 py-2 text-sm font-semibold disabled:opacity-60 inline-flex items-center gap-1.5"
+          ><Megaphone className="h-4 w-4" /> Broadcast</button>
+        </div>
+      </div>
+
       <div className="space-y-3">
-        {(q.data ?? []).map((a) => (
-          <div key={a.id} className="glass rounded-2xl p-4">
+        {(q.data ?? []).map((a: any) => (
+          <div key={a.id} className="card-noir rounded-2xl p-5 border-l-2 border-gold/60">
             <div className="flex items-center justify-between">
               <div className="font-display text-lg">{a.title}</div>
               <span className="text-[10px] uppercase tracking-widest text-gold">{a.target === "all" ? "All" : `Ch. ${a.target}`}</span>
@@ -400,27 +553,32 @@ function SettingsTab() {
     onError: (e: Error) => toast.error(e.message),
   });
   return (
-    <div className="glass-strong rounded-2xl p-6 max-w-2xl space-y-3">
-      <h2 className="font-display text-2xl mb-2">Site branding</h2>
-      <Field label="Website name"><input className={inputCls} value={form.site_name} onChange={(e) => setForm({ ...form, site_name: e.target.value })} /></Field>
-      <Field label="Tagline"><input className={inputCls} value={form.tagline} onChange={(e) => setForm({ ...form, tagline: e.target.value })} /></Field>
-      <Field label="Logo URL (optional)"><input className={inputCls} value={form.logo_url} onChange={(e) => setForm({ ...form, logo_url: e.target.value })} placeholder="https://…" /></Field>
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Primary color"><input type="color" className="h-11 w-full rounded-xl bg-transparent border border-border" value={form.primary_color} onChange={(e) => setForm({ ...form, primary_color: e.target.value })} /></Field>
-        <Field label="Accent color"><input type="color" className="h-11 w-full rounded-xl bg-transparent border border-border" value={form.accent_color} onChange={(e) => setForm({ ...form, accent_color: e.target.value })} /></Field>
+    <div className="space-y-6">
+      <div>
+        <h2 className="font-display text-3xl">Branding</h2>
+        <p className="text-sm text-muted-foreground">Adjust site name, tagline, and colors.</p>
       </div>
-      <button onClick={() => mut.mutate(form)} className="rounded-full gold-bg px-5 py-2 text-sm font-semibold">Save</button>
+      <div className="card-noir rounded-2xl p-6 max-w-2xl space-y-3">
+        <Field label="Website name"><input className={inputCls} value={form.site_name} onChange={(e) => setForm({ ...form, site_name: e.target.value })} /></Field>
+        <Field label="Tagline"><input className={inputCls} value={form.tagline} onChange={(e) => setForm({ ...form, tagline: e.target.value })} /></Field>
+        <Field label="Logo URL (optional)"><input className={inputCls} value={form.logo_url} onChange={(e) => setForm({ ...form, logo_url: e.target.value })} placeholder="https://…" /></Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Primary color"><input type="color" className="h-11 w-full rounded-xl bg-transparent border border-border" value={form.primary_color} onChange={(e) => setForm({ ...form, primary_color: e.target.value })} /></Field>
+          <Field label="Accent color"><input type="color" className="h-11 w-full rounded-xl bg-transparent border border-border" value={form.accent_color} onChange={(e) => setForm({ ...form, accent_color: e.target.value })} /></Field>
+        </div>
+        <button onClick={() => mut.mutate(form)} className="rounded-full gold-bg px-5 py-2 text-sm font-semibold">Save</button>
+      </div>
     </div>
   );
 }
 
 /* helpers */
 const inputCls = "w-full rounded-xl bg-surface-2 border border-border px-4 py-2.5 outline-none focus:border-gold text-sm";
-const selectCls = "rounded-full bg-surface-2 border border-border px-3 py-1.5 outline-none focus:border-gold";
+const selectCls = "rounded-lg bg-surface-2 border border-border px-2 py-1 text-xs outline-none focus:border-gold";
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="text-xs uppercase tracking-widest text-muted-foreground">{label}</span>
+      <span className="text-[10px] uppercase tracking-widest text-muted-foreground">{label}</span>
       <div className="mt-1">{children}</div>
     </label>
   );
