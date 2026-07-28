@@ -75,7 +75,7 @@ function RegisterPage() {
     try {
       const email = whatsappToEmail(form.whatsapp);
       const password = derivePassword(form.whatsapp);
-      const { error } = await supabase.auth.signUp({
+      const { data: signUpData, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -83,16 +83,17 @@ function RegisterPage() {
           emailRedirectTo: `${window.location.origin}/dashboard`,
         },
       });
-      if (error) {
-        if (error.message.toLowerCase().includes("already")) {
-          const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-          if (signInError) throw signInError;
-        } else {
-          throw error;
-        }
+      if (error && !error.message.toLowerCase().includes("already")) {
+        throw error;
+      }
+      // No session yet (existing account, or confirmation flow) — sign in explicitly.
+      if (!signUpData?.session) {
+        const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+        if (signInError) throw signInError;
       }
       toast.success("Welcome to Aurum");
       navigate({ to: "/dashboard" });
+
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Registration failed");
     } finally {
