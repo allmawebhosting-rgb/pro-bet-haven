@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
@@ -9,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Logo } from "@/components/Logo";
 import { Countdown } from "@/components/Countdown";
 import { toast } from "sonner";
+import { getOrCreateMyProfile } from "@/lib/profile.functions";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -35,34 +37,13 @@ type Announcement = { id: string; target: "all" | "A" | "B"; title: string; body
 
 function Dashboard() {
   const navigate = useNavigate();
+  const fetchProfile = useServerFn(getOrCreateMyProfile);
   const [tab, setTab] = useState<"home" | "predictions" | "history" | "alerts">("home");
 
   const profileQ = useQuery({
     queryKey: ["profile"],
     queryFn: async (): Promise<Profile | null> => {
-      const { data: userData } = await supabase.auth.getUser();
-      const uid = userData.user?.id;
-      if (!uid) return null;
-      let { data, error } = await supabase.from("profiles").select("*").eq("id", uid).maybeSingle();
-      if (error) throw error;
-      if (!data) {
-        // Fallback: trigger may have failed — provision profile on the fly.
-        const meta = (userData.user?.user_metadata ?? {}) as { full_name?: string; whatsapp?: string };
-        const assigned: "A" | "B" = Math.random() < 0.5 ? "A" : "B";
-        const { data: inserted, error: insErr } = await supabase
-          .from("profiles")
-          .insert({
-            id: uid,
-            full_name: meta.full_name ?? "Member",
-            whatsapp: meta.whatsapp ?? "",
-            channel: assigned,
-          })
-          .select("*")
-          .maybeSingle();
-        if (insErr) throw insErr;
-        data = inserted;
-      }
-      return (data as Profile) ?? null;
+      return (await fetchProfile()) as Profile;
     },
     retry: 2,
     retryDelay: 500,
@@ -127,12 +108,34 @@ function Dashboard() {
   }
 
   if (profileQ.isLoading) return <DashboardSkeleton />;
+  if (profileQ.isError) {
+    return (
+      <div className="min-h-screen grid place-items-center px-4">
+        <div className="glass-strong rounded-2xl p-8 max-w-sm text-center">
+          <h1 className="font-display text-2xl gold-text">We couldn't load your profile</h1>
+          <p className="mt-2 text-sm text-muted-foreground">Please try again. If the issue continues, sign out and sign back in.</p>
+          <button
+            onClick={() => profileQ.refetch()}
+            className="mt-6 rounded-full gold-bg px-5 py-2 text-sm font-semibold"
+          >
+            Try again
+          </button>
+        </div>
+      </div>
+    );
+  }
   const profile = profileQ.data;
   if (!profile) {
     return (
       <div className="min-h-screen grid place-items-center px-4">
         <div className="glass-strong rounded-2xl p-8 text-center">
-          <p>Your profile is still being provisioned. Please refresh in a moment.</p>
+          <p>We couldn't load your member profile.</p>
+          <button
+            onClick={() => profileQ.refetch()}
+            className="mt-6 rounded-full gold-bg px-5 py-2 text-sm font-semibold"
+          >
+            Try again
+          </button>
         </div>
       </div>
     );
