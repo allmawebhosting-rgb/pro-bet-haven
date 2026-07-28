@@ -42,14 +42,22 @@ function Dashboard() {
 
   const profileQ = useQuery({
     queryKey: ["profile"],
-    queryFn: async (): Promise<Profile | null> => {
-      return (await fetchProfile()) as Profile;
+    queryFn: async () => {
+      return await fetchProfile();
     },
     retry: 2,
     retryDelay: 500,
   });
 
-  const channel = profileQ.data?.channel;
+  useEffect(() => {
+    if (profileQ.data && "needsOnboarding" in profileQ.data && profileQ.data.needsOnboarding) {
+      navigate({ to: "/onboarding" });
+    }
+  }, [profileQ.data, navigate]);
+
+  const profile: Profile | undefined =
+    profileQ.data && "profile" in profileQ.data ? (profileQ.data.profile as Profile) : undefined;
+  const channel = profile?.channel;
 
   const settingsQ = useQuery({
     queryKey: ["channel_settings", channel],
@@ -124,7 +132,9 @@ function Dashboard() {
       </div>
     );
   }
-  const profile = profileQ.data;
+  if (profileQ.data && "needsOnboarding" in profileQ.data && profileQ.data.needsOnboarding) {
+    return <DashboardSkeleton />;
+  }
   if (!profile) {
     return (
       <div className="min-h-screen grid place-items-center px-4">
