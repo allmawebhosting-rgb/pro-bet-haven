@@ -132,7 +132,9 @@ function Dashboard() {
       </div>
     );
   }
-  const profile = profileQ.data;
+  if (profileQ.data && "needsOnboarding" in profileQ.data && profileQ.data.needsOnboarding) {
+    return <DashboardSkeleton />;
+  }
   if (!profile) {
     return (
       <div className="min-h-screen grid place-items-center px-4">
