@@ -4,7 +4,7 @@ function fmt(n: number) {
   return n.toString().padStart(2, "0");
 }
 
-export function Countdown({ target, onZero }: { target: string | Date; onZero?: () => void }) {
+export function Countdown({ target, onZero, compact }: { target: string | Date; onZero?: () => void; compact?: boolean }) {
   const targetTs = new Date(target).getTime();
   const [now, setNow] = useState(() => Date.now());
 
@@ -29,6 +29,14 @@ export function Countdown({ target, onZero }: { target: string | Date; onZero?: 
     { label: "Minutes", value: mins },
     { label: "Seconds", value: secs },
   ];
+
+  if (compact) {
+    return (
+      <span className="tabular-nums">
+        {days > 0 ? `${days}d ` : ""}{fmt(hours)}:{fmt(mins)}:{fmt(secs)}
+      </span>
+    );
+  }
 
   return (
     <div className="grid grid-cols-4 gap-2 sm:gap-4">
