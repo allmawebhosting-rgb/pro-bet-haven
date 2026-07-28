@@ -1,10 +1,10 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import {
-  Trophy, Bell, LogOut, TrendingUp, Timer, Settings2, Home, Zap,
+  Trophy, Bell, LogOut, Timer, Settings2, Lock, Flame, CheckCircle2, Crown, Zap,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Logo } from "@/components/Logo";
@@ -15,8 +15,8 @@ import { getOrCreateMyProfile } from "@/lib/profile.functions";
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
     meta: [
-      { title: "Dashboard — Aurum" },
-      { name: "description", content: "Your private predictions channel — releases, history, and performance." },
+      { title: "Your Slate — Aurum Fixed" },
+      { name: "description", content: "Your private fixed matches feed. Live picks, countdowns, and VIP unlocks." },
       { name: "robots", content: "noindex" },
     ],
   }),
@@ -26,11 +26,13 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 type Profile = {
   id: string; full_name: string; whatsapp: string; channel: "A" | "B";
   status: "active" | "disabled"; created_at: string;
+  is_vip: boolean; free_picks_claimed: number;
 };
 type Prediction = {
   id: string; channel: "A" | "B"; match_name: string; league: string;
   home_team: string; away_team: string; kickoff_at: string; prediction: string;
   odds: number | null; confidence: number; published: boolean; release_at: string;
+  tier: "free" | "vip";
 };
 type ChannelSettings = { channel: "A" | "B"; next_release_at: string; release_interval_minutes: number };
 type Announcement = { id: string; target: "all" | "A" | "B"; title: string; body: string; created_at: string };
@@ -38,13 +40,10 @@ type Announcement = { id: string; target: "all" | "A" | "B"; title: string; body
 function Dashboard() {
   const navigate = useNavigate();
   const fetchProfile = useServerFn(getOrCreateMyProfile);
-  const [tab, setTab] = useState<"home" | "predictions" | "history" | "alerts">("home");
 
   const profileQ = useQuery({
     queryKey: ["profile"],
-    queryFn: async () => {
-      return await fetchProfile();
-    },
+    queryFn: async () => await fetchProfile(),
     retry: 2,
     retryDelay: 500,
   });
@@ -58,6 +57,7 @@ function Dashboard() {
   const profile: Profile | undefined =
     profileQ.data && "profile" in profileQ.data ? (profileQ.data.profile as Profile) : undefined;
   const channel = profile?.channel;
+  const isVip = !!profile?.is_vip;
 
   const settingsQ = useQuery({
     queryKey: ["channel_settings", channel],
@@ -72,7 +72,7 @@ function Dashboard() {
     queryKey: ["predictions", channel],
     enabled: !!channel,
     queryFn: async (): Promise<Prediction[]> => {
-      const { data } = await supabase.from("predictions").select("*").order("kickoff_at", { ascending: false });
+      const { data } = await supabase.from("predictions").select("*").order("release_at", { ascending: false });
       return (data as Prediction[]) ?? [];
     },
   });
@@ -85,7 +85,6 @@ function Dashboard() {
     },
   });
 
-  // Realtime
   useEffect(() => {
     if (!channel) return;
     const ch = supabase
@@ -115,37 +114,46 @@ function Dashboard() {
     navigate({ to: "/" });
   }
 
+  // Merge picks + announcements into a chronological feed
+  const feed = useMemo(() => {
+    const picks = (predictionsQ.data ?? [])
+      .filter((p) => p.published && new Date(p.release_at) <= new Date())
+      .map((p) => ({ kind: "pick" as const, ts: new Date(p.release_at).getTime(), pick: p }));
+    const anns = (announcementsQ.data ?? []).map((a) => ({
+      kind: "announcement" as const,
+      ts: new Date(a.created_at).getTime(),
+      announcement: a,
+    }));
+    // Locked VIP teasers if the user is not VIP — synthesize 3 upcoming locked slots
+    const locked = !isVip
+      ? Array.from({ length: 3 }).map((_, i) => ({
+          kind: "locked" as const,
+          ts: Date.now() - i * 60_000 - 1,
+          i,
+        }))
+      : [];
+    return [...picks, ...anns, ...locked].sort((a, b) => b.ts - a.ts);
+  }, [predictionsQ.data, announcementsQ.data, isVip]);
+
   if (profileQ.isLoading) return <DashboardSkeleton />;
   if (profileQ.isError) {
     return (
       <div className="min-h-screen grid place-items-center px-4">
-        <div className="glass-strong rounded-2xl p-8 max-w-sm text-center">
+        <div className="card-noir rounded-3xl p-8 max-w-sm text-center">
           <h1 className="font-display text-2xl gold-text">We couldn't load your profile</h1>
           <p className="mt-2 text-sm text-muted-foreground">Please try again. If the issue continues, sign out and sign back in.</p>
-          <button
-            onClick={() => profileQ.refetch()}
-            className="mt-6 rounded-full gold-bg px-5 py-2 text-sm font-semibold"
-          >
-            Try again
-          </button>
+          <button onClick={() => profileQ.refetch()} className="mt-6 rounded-full gold-bg px-5 py-2 text-sm font-semibold">Try again</button>
         </div>
       </div>
     );
   }
-  if (profileQ.data && "needsOnboarding" in profileQ.data && profileQ.data.needsOnboarding) {
-    return <DashboardSkeleton />;
-  }
+  if (profileQ.data && "needsOnboarding" in profileQ.data && profileQ.data.needsOnboarding) return <DashboardSkeleton />;
   if (!profile) {
     return (
       <div className="min-h-screen grid place-items-center px-4">
-        <div className="glass-strong rounded-2xl p-8 text-center">
+        <div className="card-noir rounded-3xl p-8 text-center">
           <p>We couldn't load your member profile.</p>
-          <button
-            onClick={() => profileQ.refetch()}
-            className="mt-6 rounded-full gold-bg px-5 py-2 text-sm font-semibold"
-          >
-            Try again
-          </button>
+          <button onClick={() => profileQ.refetch()} className="mt-6 rounded-full gold-bg px-5 py-2 text-sm font-semibold">Try again</button>
         </div>
       </div>
     );
@@ -153,7 +161,7 @@ function Dashboard() {
   if (profile.status === "disabled") {
     return (
       <div className="min-h-screen grid place-items-center px-4">
-        <div className="glass-strong rounded-2xl p-8 max-w-sm text-center">
+        <div className="card-noir rounded-3xl p-8 max-w-sm text-center">
           <h1 className="font-display text-2xl gold-text">Access paused</h1>
           <p className="mt-2 text-sm text-muted-foreground">Your account is currently disabled. Please contact support.</p>
           <button onClick={signOut} className="mt-6 rounded-full gold-bg px-5 py-2 text-sm font-semibold">Sign out</button>
@@ -162,189 +170,235 @@ function Dashboard() {
     );
   }
 
-  const live = (predictionsQ.data ?? []).filter((p) => p.published && new Date(p.release_at) <= new Date());
-  const featured = live[0];
+  const totalLive = (predictionsQ.data ?? []).filter((p) => p.published && new Date(p.release_at) <= new Date()).length;
+  const freeRemaining = Math.max(0, 2 - (profile.free_picks_claimed ?? 0));
   const nextRelease = settingsQ.data?.next_release_at;
+  const firstName = profile.full_name.split(" ")[0];
 
   return (
     <div className="min-h-screen">
       {/* Top bar */}
       <header className="sticky top-0 z-40 border-b border-border/40 backdrop-blur-xl bg-background/70">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 h-16 flex items-center justify-between">
+        <div className="mx-auto max-w-4xl px-4 sm:px-6 h-16 flex items-center justify-between">
           <Logo />
           <div className="flex items-center gap-2">
-            <div className="hidden sm:flex items-center gap-2 rounded-full glass px-3 py-1.5 text-xs">
+            <div className="hidden sm:inline-flex items-center gap-2 rounded-full glass px-3 py-1.5 text-xs">
               <span className="h-1.5 w-1.5 rounded-full bg-gold animate-pulse" />
               Channel {profile.channel}
             </div>
-            <button onClick={signOut} className="rounded-full glass px-3 py-2 text-sm hover:border-gold/40 transition inline-flex items-center gap-1.5">
-              <LogOut className="h-4 w-4" /> <span className="hidden sm:inline">Sign out</span>
-            </button>
+            {isVip ? (
+              <span className="rounded-full gold-bg px-3 py-1 text-[10px] font-bold uppercase tracking-widest inline-flex items-center gap-1"><Crown className="h-3 w-3" /> VIP</span>
+            ) : (
+              <span className="rounded-full glass px-3 py-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Free</span>
+            )}
+            <Link to="/admin" className="rounded-full glass px-2.5 py-2 text-xs hover:border-gold/40" title="Admin"><Settings2 className="h-4 w-4" /></Link>
+            <button onClick={signOut} className="rounded-full glass px-2.5 py-2 text-xs hover:border-gold/40" title="Sign out"><LogOut className="h-4 w-4" /></button>
           </div>
         </div>
       </header>
 
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 py-8 grid gap-8 lg:grid-cols-[220px_1fr]">
-        {/* Sidebar */}
-        <aside className="hidden lg:block">
-          <nav className="glass rounded-2xl p-3 space-y-1 sticky top-24">
-            {[
-              { id: "home", label: "Overview", icon: Home },
-              { id: "predictions", label: "Live picks", icon: Zap },
-              { id: "history", label: "History", icon: TrendingUp },
-              { id: "alerts", label: "Announcements", icon: Bell },
-            ].map((i) => (
-              <button
-                key={i.id}
-                onClick={() => setTab(i.id as typeof tab)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition ${
-                  tab === i.id ? "gold-bg text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-white/5"
-                }`}
-              >
-                <i.icon className="h-4 w-4" /> {i.label}
-              </button>
-            ))}
-            <div className="pt-3 mt-3 border-t border-border/40">
-              <Link to="/admin" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-muted-foreground hover:text-gold">
-                <Settings2 className="h-4 w-4" /> Admin
-              </Link>
+      <div className="mx-auto max-w-4xl px-4 sm:px-6 py-8 space-y-8">
+        {/* HERO STRIP */}
+        <motion.section
+          initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
+          className="card-fixed rounded-[2rem] p-6 sm:p-10 gold-ring"
+        >
+          <div className="flex items-start justify-between gap-6 flex-wrap">
+            <div>
+              <p className="text-xs uppercase tracking-[0.25em] text-gold">Welcome back</p>
+              <h1 className="mt-2 font-display text-4xl sm:text-6xl leading-none">
+                Hello, <span className="gold-text">{firstName}</span>.
+              </h1>
+              <p className="mt-3 text-sm text-muted-foreground max-w-md">
+                Your private fixed-matches feed. New slips drop on the countdown below.
+              </p>
             </div>
-          </nav>
-        </aside>
+            <div className="flex flex-col items-end gap-2">
+              {!isVip && (
+                <div className="rounded-2xl glass p-3 text-right">
+                  <div className="text-[10px] uppercase tracking-widest text-gold">Free trial</div>
+                  <div className="mt-1 font-display text-2xl gold-text">{freeRemaining}<span className="text-sm text-muted-foreground"> / 2 left</span></div>
+                </div>
+              )}
+              <a href="#upgrade" className="rounded-full gold-bg px-4 py-2 text-xs font-semibold inline-flex items-center gap-1.5">
+                {isVip ? <><Flame className="h-3.5 w-3.5" /> VIP member</> : <><Crown className="h-3.5 w-3.5" /> Upgrade to VIP</>}
+              </a>
+            </div>
+          </div>
 
-        <main className="min-w-0 space-y-8">
-          <motion.section
-            initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
-          >
-            <p className="text-xs uppercase tracking-[0.25em] text-gold">Welcome back</p>
-            <h1 className="mt-2 font-display text-4xl sm:text-5xl">
-              Hello, <span className="gold-text">{profile.full_name.split(" ")[0]}</span>.
-            </h1>
-            <p className="mt-2 text-sm text-muted-foreground">
-              You're in the Aurum private circle. Predictions are for information only — please play responsibly.
-            </p>
-          </motion.section>
-
-          {/* Countdown */}
-          <section className="glass-strong rounded-3xl p-6 sm:p-8">
-            <div className="flex items-center justify-between gap-4 mb-6 flex-wrap">
-              <div>
-                <p className="text-xs uppercase tracking-[0.25em] text-gold flex items-center gap-2"><Timer className="h-3.5 w-3.5" /> Next release</p>
-                <h2 className="mt-1 font-display text-2xl sm:text-3xl">Countdown to your next pick</h2>
-              </div>
-              {nextRelease && <div className="text-xs text-muted-foreground">Every {settingsQ.data?.release_interval_minutes ?? 0} min</div>}
+          {/* Countdown inside hero */}
+          <div className="mt-8">
+            <div className="flex items-center gap-2 text-xs uppercase tracking-[0.25em] text-gold mb-4">
+              <Timer className="h-3.5 w-3.5" /> Next fixed match drop
+              {settingsQ.data && <span className="text-muted-foreground normal-case tracking-normal">· every {settingsQ.data.release_interval_minutes} min</span>}
             </div>
             {nextRelease ? <Countdown target={nextRelease} onZero={() => predictionsQ.refetch()} /> : <div className="h-24 shimmer rounded-xl" />}
-          </section>
+          </div>
+        </motion.section>
 
-          {/* Featured prediction */}
-          {featured && (
-            <section className="glass-strong rounded-3xl p-6 sm:p-8">
-              <p className="text-xs uppercase tracking-[0.25em] text-gold">Featured pick</p>
-              <div className="mt-3 grid gap-6 md:grid-cols-[1fr_auto] items-end">
-                <div className="min-w-0">
-                  <h2 className="font-display text-3xl sm:text-4xl truncate">{featured.home_team} <span className="text-muted-foreground text-2xl">vs</span> {featured.away_team}</h2>
-                  <p className="mt-1 text-sm text-muted-foreground">{featured.league} · {new Date(featured.kickoff_at).toLocaleString()}</p>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <span className="rounded-full glass px-3 py-1 text-xs">Pick: <b className="text-foreground">{featured.prediction}</b></span>
-                    {featured.odds && <span className="rounded-full glass px-3 py-1 text-xs">Odds: <b className="text-foreground">{featured.odds}</b></span>}
-                    <span className="rounded-full glass px-3 py-1 text-xs flex items-center gap-1">
-                      Confidence:{" "}
-                      <span className="flex gap-0.5">
-                        {Array.from({ length: 5 }).map((_, k) => (
-                          <span key={k} className={`h-2 w-2 rounded-full ${k < featured.confidence ? "bg-gold" : "bg-muted"}`} />
-                        ))}
-                      </span>
-                    </span>
-                  </div>
-                </div>
-                <div className="grid h-24 w-24 place-items-center rounded-2xl gold-bg shrink-0">
-                  <Trophy className="h-10 w-10 text-primary-foreground" />
-                </div>
+        {/* Stat pills */}
+        <section className="grid grid-cols-3 gap-3">
+          {[
+            { label: "Live picks", value: totalLive, icon: Zap },
+            { label: "Win rate", value: "98%", icon: CheckCircle2 },
+            { label: "Since", value: new Date(profile.created_at).toLocaleDateString(undefined, { month: "short", year: "numeric" }), icon: Trophy },
+          ].map((s) => (
+            <div key={s.label} className="card-noir rounded-2xl p-4 flex items-center gap-3">
+              <div className="grid h-9 w-9 place-items-center rounded-full gold-bg shrink-0">
+                <s.icon className="h-4 w-4" />
               </div>
-            </section>
+              <div className="min-w-0">
+                <div className="text-[10px] uppercase tracking-widest text-muted-foreground truncate">{s.label}</div>
+                <div className="font-display text-xl gold-text truncate">{s.value}</div>
+              </div>
+            </div>
+          ))}
+        </section>
+
+        {/* FEED */}
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="font-display text-3xl">Your slate</h2>
+            <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Channel {profile.channel}</span>
+          </div>
+
+          {feed.length === 0 && (
+            <div className="card-noir rounded-2xl p-10 text-center text-sm text-muted-foreground">
+              Nothing dropped yet — the countdown above shows the next release.
+            </div>
           )}
 
-          {/* Predictions list */}
-          <section>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-display text-2xl">Recent predictions</h2>
-              <span className="text-xs text-muted-foreground">Channel {profile.channel}</span>
-            </div>
-            <div className="grid gap-4">
-              {live.length === 0 && (
-                <div className="glass rounded-2xl p-8 text-center text-sm text-muted-foreground">
-                  Nothing released yet. Watch the countdown above.
-                </div>
-              )}
-              {live.map((p) => (
-                <motion.div
-                  key={p.id}
-                  initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-                  className="glass rounded-2xl p-5 grid gap-3 sm:grid-cols-[1fr_auto] items-center"
-                >
-                  <div className="min-w-0">
-                    <div className="text-xs text-muted-foreground uppercase tracking-widest">{p.league}</div>
-                    <div className="font-display text-xl truncate">{p.home_team} vs {p.away_team}</div>
-                    <div className="text-xs text-muted-foreground mt-1">{new Date(p.kickoff_at).toLocaleString()}</div>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <span className="rounded-full gold-bg px-3 py-1 text-xs font-semibold">{p.prediction}</span>
-                    {p.odds && <span className="rounded-full glass px-3 py-1 text-xs">{p.odds}</span>}
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </section>
+          {feed.map((item, idx) => {
+            if (item.kind === "pick") return <PickCard key={item.pick.id} p={item.pick} />;
+            if (item.kind === "announcement") return <AnnouncementCard key={item.announcement.id} a={item.announcement} />;
+            return <LockedCard key={`l${item.i}`} idx={idx} />;
+          })}
+        </section>
 
-          {/* Stats */}
-          <section className="grid gap-4 sm:grid-cols-3">
-            {[
-              { label: "Total picks", value: (predictionsQ.data ?? []).length },
-              { label: "Live now", value: live.length },
-              { label: "Member since", value: new Date(profile.created_at).toLocaleDateString() },
-            ].map((s) => (
-              <div key={s.label} className="glass rounded-2xl p-5">
-                <div className="text-xs uppercase tracking-widest text-muted-foreground">{s.label}</div>
-                <div className="mt-2 font-display text-3xl gold-text">{s.value}</div>
-              </div>
-            ))}
+        {/* UPGRADE */}
+        {!isVip && (
+          <section id="upgrade" className="card-fixed rounded-[2rem] p-8 sm:p-12 text-center gold-ring">
+            <Crown className="h-8 w-8 text-gold mx-auto" />
+            <h2 className="mt-4 font-display text-3xl sm:text-5xl">Unlock every fixed match.</h2>
+            <p className="mt-3 text-muted-foreground max-w-md mx-auto text-sm">
+              VIP members get every slip, every day, straight to this feed and WhatsApp.
+            </p>
+            <a
+              href="https://wa.me/10000000000?text=I%20want%20to%20upgrade%20to%20VIP"
+              target="_blank" rel="noreferrer"
+              className="mt-6 inline-flex items-center gap-2 rounded-full gold-bg px-7 py-3 text-sm font-semibold"
+            >
+              <Crown className="h-4 w-4" /> Contact to go VIP
+            </a>
           </section>
-
-          {/* Announcements */}
-          <section>
-            <h2 className="font-display text-2xl mb-4 flex items-center gap-2"><Bell className="h-5 w-5 text-gold" /> Announcements</h2>
-            <div className="grid gap-3">
-              {(announcementsQ.data ?? []).length === 0 && (
-                <div className="glass rounded-2xl p-6 text-sm text-muted-foreground">No announcements yet.</div>
-              )}
-              {(announcementsQ.data ?? []).map((a) => (
-                <div key={a.id} className="glass rounded-2xl p-5">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-display text-lg">{a.title}</h3>
-                    <span className="text-[10px] uppercase tracking-widest text-muted-foreground">{new Date(a.created_at).toLocaleDateString()}</span>
-                  </div>
-                  <p className="mt-2 text-sm text-muted-foreground">{a.body}</p>
-                </div>
-              ))}
-            </div>
-          </section>
-        </main>
+        )}
       </div>
+    </div>
+  );
+}
+
+function PickCard({ p }: { p: Prediction }) {
+  const isGuaranteed = p.confidence >= 5;
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+      className={`card-fixed rounded-2xl p-6 relative overflow-hidden`}
+    >
+      <div className="absolute left-0 top-0 bottom-0 w-1 gold-bg" />
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex items-center gap-2">
+          <span className="rounded-full gold-bg px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest">Fixed</span>
+          <span className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">{p.league}</span>
+          {p.tier === "free" && <span className="rounded-full glass px-2 py-0.5 text-[10px] uppercase tracking-widest text-gold">Free</span>}
+        </div>
+        {isGuaranteed && (
+          <span className="rounded-full gold-bg px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest inline-flex items-center gap-1">
+            <Flame className="h-3 w-3" /> Guaranteed
+          </span>
+        )}
+      </div>
+      <div className="mt-4 font-display text-2xl sm:text-3xl">
+        {p.home_team} <span className="text-muted-foreground">vs</span> {p.away_team}
+      </div>
+      <div className="mt-1 text-xs text-muted-foreground">{new Date(p.kickoff_at).toLocaleString()}</div>
+
+      <div className="mt-5 grid gap-3 sm:grid-cols-[1fr_auto] items-end">
+        <div>
+          <div className="text-[10px] uppercase tracking-widest text-gold">Pick</div>
+          <div className="mt-1 font-display text-2xl">{p.prediction}</div>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {p.odds != null && (
+            <span className="rounded-full glass px-3 py-1.5 text-xs">Odds <b className="text-gold ml-1">{p.odds}</b></span>
+          )}
+          <span className="rounded-full glass px-3 py-1.5 text-xs inline-flex items-center gap-1.5">
+            Confidence
+            <span className="flex gap-0.5">
+              {Array.from({ length: 5 }).map((_, k) => (
+                <span key={k} className={`h-1.5 w-1.5 rounded-full ${k < p.confidence ? "bg-gold" : "bg-muted"}`} />
+              ))}
+            </span>
+          </span>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+function LockedCard({ idx }: { idx: number }) {
+  return (
+    <div className="card-noir rounded-2xl p-6 relative overflow-hidden">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="rounded-full glass px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest inline-flex items-center gap-1 text-gold">
+            <Lock className="h-3 w-3" /> VIP only
+          </span>
+          <span className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">Premier League</span>
+        </div>
+      </div>
+      <div className="mt-4 font-display text-2xl blur-sm select-none">██████ vs ██████</div>
+      <div className="mt-1 text-xs text-muted-foreground blur-sm select-none">Kickoff hidden</div>
+      <div className="mt-5 flex items-center justify-between gap-3 flex-wrap">
+        <div className="blur-sm select-none">
+          <div className="text-[10px] uppercase tracking-widest text-gold">Pick</div>
+          <div className="font-display text-xl">Hidden {idx + 1}</div>
+        </div>
+        <a href="#upgrade" className="rounded-full gold-bg px-4 py-2 text-xs font-semibold inline-flex items-center gap-1.5">
+          <Crown className="h-3.5 w-3.5" /> Unlock with VIP
+        </a>
+      </div>
+    </div>
+  );
+}
+
+function AnnouncementCard({ a }: { a: Announcement }) {
+  return (
+    <div className="card-noir rounded-2xl p-5 border-l-2 border-gold/60">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Bell className="h-4 w-4 text-gold" />
+          <span className="text-[10px] uppercase tracking-[0.25em] text-gold">Broadcast</span>
+        </div>
+        <span className="text-[10px] text-muted-foreground">{new Date(a.created_at).toLocaleDateString()}</span>
+      </div>
+      <h3 className="mt-2 font-display text-xl">{a.title}</h3>
+      <p className="mt-1 text-sm text-muted-foreground">{a.body}</p>
     </div>
   );
 }
 
 function DashboardSkeleton() {
   return (
-    <div className="min-h-screen p-6 space-y-6 max-w-7xl mx-auto">
+    <div className="min-h-screen p-6 space-y-6 max-w-4xl mx-auto">
       <div className="h-16 shimmer rounded-2xl" />
-      <div className="h-40 shimmer rounded-3xl" />
-      <div className="grid gap-4 sm:grid-cols-3">
-        <div className="h-28 shimmer rounded-2xl" />
-        <div className="h-28 shimmer rounded-2xl" />
-        <div className="h-28 shimmer rounded-2xl" />
+      <div className="h-56 shimmer rounded-3xl" />
+      <div className="grid gap-4 grid-cols-3">
+        <div className="h-20 shimmer rounded-2xl" />
+        <div className="h-20 shimmer rounded-2xl" />
+        <div className="h-20 shimmer rounded-2xl" />
       </div>
+      <div className="h-32 shimmer rounded-2xl" />
+      <div className="h-32 shimmer rounded-2xl" />
     </div>
   );
 }

@@ -44,7 +44,6 @@
 :root {
   --radius: 0.875rem;
 
-  /* Luxury black/gold/white palette */
   --background: oklch(0.08 0.005 60);
   --foreground: oklch(0.97 0.005 90);
 
@@ -84,6 +83,7 @@
   --gradient-radial-gold: radial-gradient(circle at 30% 20%, oklch(0.82 0.14 85 / 30%), transparent 60%);
   --shadow-luxury: 0 30px 80px -30px oklch(0.82 0.14 85 / 25%), 0 8px 24px -12px oklch(0 0 0 / 60%);
   --shadow-glass: inset 0 1px 0 oklch(1 0 0 / 6%), 0 20px 40px -20px oklch(0 0 0 / 70%);
+  --shadow-gold: 0 0 40px -4px oklch(0.82 0.14 85 / 40%);
 }
 
 .dark {
@@ -129,6 +129,30 @@ html, body {
   backdrop-filter: blur(28px) saturate(150%);
   border: 1px solid oklch(0.82 0.14 85 / 25%);
   box-shadow: var(--shadow-luxury);
+}
+
+@utility card-noir {
+  background:
+    linear-gradient(180deg, oklch(0.11 0.008 60) 0%, oklch(0.09 0.008 60) 100%);
+  border: 1px solid oklch(0.82 0.14 85 / 22%);
+  box-shadow:
+    inset 0 1px 0 oklch(1 0 0 / 5%),
+    0 24px 60px -24px oklch(0 0 0 / 70%);
+}
+
+@utility card-fixed {
+  position: relative;
+  background:
+    linear-gradient(180deg, oklch(0.13 0.01 65) 0%, oklch(0.09 0.006 60) 100%);
+  border: 1px solid oklch(0.82 0.14 85 / 45%);
+  box-shadow:
+    inset 0 1px 0 oklch(1 0 0 / 8%),
+    0 0 0 1px oklch(0.82 0.14 85 / 8%),
+    0 32px 80px -32px oklch(0.82 0.14 85 / 35%);
+}
+
+@utility gold-hairline {
+  border: 1px solid oklch(0.82 0.14 85 / 30%);
 }
 
 @keyframes gradient-pan {
@@ -219,4 +243,10 @@ html, body {
   background: linear-gradient(90deg, transparent, oklch(0.82 0.14 85 / 25%), transparent);
   background-size: 200% 100%;
   animation: shimmer 2.5s linear infinite;
+}
+
+@utility gold-ring {
+  box-shadow:
+    0 0 0 1px oklch(0.82 0.14 85 / 35%),
+    0 0 60px -8px oklch(0.82 0.14 85 / 40%);
 }

@@ -57,6 +57,7 @@ export const upsertPredictionAdmin = createServerFn({ method: "POST" })
     confidence: number;
     published: boolean;
     release_at: string;
+    tier: "free" | "vip";
   }) => d)
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
@@ -69,6 +70,17 @@ export const upsertPredictionAdmin = createServerFn({ method: "POST" })
       const { error } = await supabaseAdmin.from("predictions").insert(data);
       if (error) throw new Error(error.message);
     }
+    return { ok: true };
+  });
+
+export const setMemberVipAdmin = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { id: string; is_vip: boolean }) => d)
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.from("profiles").update({ is_vip: data.is_vip }).eq("id", data.id);
+    if (error) throw new Error(error.message);
     return { ok: true };
   });
 

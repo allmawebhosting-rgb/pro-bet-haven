@@ -74,6 +74,7 @@ export type Database = {
           prediction: string
           published: boolean
           release_at: string
+          tier: Database["public"]["Enums"]["prediction_tier"]
         }
         Insert: {
           away_team: string
@@ -89,6 +90,7 @@ export type Database = {
           prediction: string
           published?: boolean
           release_at?: string
+          tier?: Database["public"]["Enums"]["prediction_tier"]
         }
         Update: {
           away_team?: string
@@ -104,6 +106,7 @@ export type Database = {
           prediction?: string
           published?: boolean
           release_at?: string
+          tier?: Database["public"]["Enums"]["prediction_tier"]
         }
         Relationships: []
       }
@@ -111,8 +114,10 @@ export type Database = {
         Row: {
           channel: Database["public"]["Enums"]["channel_code"]
           created_at: string
+          free_picks_claimed: number
           full_name: string
           id: string
+          is_vip: boolean
           last_login: string | null
           status: Database["public"]["Enums"]["user_status"]
           whatsapp: string
@@ -120,8 +125,10 @@ export type Database = {
         Insert: {
           channel: Database["public"]["Enums"]["channel_code"]
           created_at?: string
+          free_picks_claimed?: number
           full_name: string
           id: string
+          is_vip?: boolean
           last_login?: string | null
           status?: Database["public"]["Enums"]["user_status"]
           whatsapp: string
@@ -129,8 +136,10 @@ export type Database = {
         Update: {
           channel?: Database["public"]["Enums"]["channel_code"]
           created_at?: string
+          free_picks_claimed?: number
           full_name?: string
           id?: string
+          is_vip?: boolean
           last_login?: string | null
           status?: Database["public"]["Enums"]["user_status"]
           whatsapp?: string
@@ -202,6 +211,7 @@ export type Database = {
       announcement_target: "all" | "A" | "B"
       app_role: "admin" | "user"
       channel_code: "A" | "B"
+      prediction_tier: "free" | "vip"
       user_status: "active" | "disabled"
     }
     CompositeTypes: {
@@ -333,6 +343,7 @@ export const Constants = {
       announcement_target: ["all", "A", "B"],
       app_role: ["admin", "user"],
       channel_code: ["A", "B"],
+      prediction_tier: ["free", "vip"],
       user_status: ["active", "disabled"],
     },
   },
