@@ -18,37 +18,32 @@ function AuthCallback() {
 
   useEffect(() => {
     let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
 
-    async function check() {
-      const { data } = await supabase.auth.getSession();
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!cancelled && session) navigate({ to: "/dashboard" });
+    });
+
+    supabase.auth.getSession().then(({ data }) => {
       if (cancelled) return;
       if (data.session) {
         navigate({ to: "/dashboard" });
-        return true;
+        return;
       }
-      return false;
-    }
-
-    check().then((ok) => {
-      if (ok) return;
-      const { data: sub } = supabase.auth.onAuthStateChange((event) => {
-        if (event === "SIGNED_IN") {
-          navigate({ to: "/dashboard" });
-        }
-      });
-      const timer = setTimeout(() => {
-        setMsg("We couldn't complete sign-in. Please try again.");
+      timer = setTimeout(() => {
+        if (cancelled) return;
+        setMsg("We couldn't complete sign-in. Redirecting you back…");
+        navigate({ to: "/auth" });
       }, 8000);
-      return () => {
-        sub.subscription.unsubscribe();
-        clearTimeout(timer);
-      };
     });
 
     return () => {
       cancelled = true;
+      sub.subscription.unsubscribe();
+      if (timer) clearTimeout(timer);
     };
   }, [navigate]);
+
 
   return (
     <div className="min-h-screen grid place-items-center px-4">

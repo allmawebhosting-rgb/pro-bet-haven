@@ -1,28 +1,24 @@
-## Enable Google login
+## Problem
 
-### 1. Provider activation
-- Call `supabase--configure_social_auth` with `providers: ["google"]` (keep email enabled — existing WhatsApp members rely on it).
+The app has two sign-in paths and both can dead-end before the dashboard:
 
-### 2. Auth UI
-- Add a "Continue with Google" button on `src/routes/auth.tsx` and `src/routes/register.tsx` using `lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin + "/auth/callback" })` from `@/integrations/lovable`.
-- Divider ("or") separating Google button from the existing WhatsApp form.
+1. **WhatsApp registration** creates an account with a synthetic email (`wa_<digits>@aurum.members`). If the backend requires email confirmation, `signUp` returns **no session**, so the redirect to `/dashboard` bounces straight back to `/auth`. The confirmation email can never arrive either — the domain isn't real. This matches "I can't even see the inside of the project".
+2. **Google button** calls the managed OAuth helper, but the Google provider must be switched on in the backend or every attempt fails with "Unsupported provider".
 
-### 3. Callback + WhatsApp prompt
-- New public route `src/routes/auth.callback.tsx`: waits for session, then checks profile. If profile exists → `/dashboard`. If not → `/onboarding`.
-- New route `src/routes/_authenticated/onboarding.tsx`: short form asking for Full Name (prefilled from Google `user_metadata.full_name`) and WhatsApp number (required, validated). Submits to a new server function.
+Neither cause is confirmed yet from live behavior, so step 1 of the work is verifying which one is firing.
 
-### 4. Server function
-- `src/lib/profile.functions.ts`: add `completeOnboarding({ full_name, whatsapp })` — authenticated, upserts profile with random Channel A/B assignment via `supabaseAdmin`, ensures `user` role. Reject if profile already exists with non-empty whatsapp.
-- Update existing `getOrCreateMyProfile`: for Google users with no metadata WhatsApp, do NOT auto-create the profile — return a sentinel (`{ needsOnboarding: true }`) so the dashboard/callback can redirect to `/onboarding` instead of creating a blank profile.
+## Plan
 
-### 5. Dashboard guard
-- In `_authenticated/dashboard.tsx`, if the query result indicates onboarding needed, navigate to `/onboarding`.
+1. **Verify** — reproduce a registration and a Google sign-in in the running app, capture the exact error and whether a session is created.
+2. **Enable auto-confirm for signups** so WhatsApp-based accounts get an immediate session (the synthetic email address can never receive a confirmation link, so confirmation must be off for this design).
+3. **Turn on the Google provider** with the managed credentials in the same change, so the Google button works.
+4. **Harden the register flow**: after `signUp`, if no session came back, explicitly sign in with the derived password before navigating; surface the real error message instead of a generic "Registration failed".
+5. **Harden the login flow**: keep the friendly "no account found" message only for invalid-credential errors; show the actual message for anything else (rate limits, provider disabled) so failures are diagnosable.
+6. **Fix the callback fallback**: `/auth/callback` currently leaks its subscription cleanup inside a promise; make it clean up properly and send the user back to `/auth` with an error toast after the timeout instead of stranding them on a dead screen.
+7. **Re-test end to end**: register a new number → land on dashboard; sign out → sign back in; Google sign-in → onboarding → dashboard.
 
-### 6. Verify
-- Playwright: load `/auth`, confirm Google button renders; simulate no-profile session and confirm redirect to `/onboarding`; confirm existing WhatsApp login still works.
+## Technical notes
 
-### Technical notes
-- Managed Google OAuth — no credentials needed from the user.
-- `redirect_uri` must be public same-origin (`/auth/callback`), not `/dashboard`.
-- Onboarding route sits under `_authenticated` so unauthenticated visits redirect to `/auth`.
-- Profile `whatsapp` column is `NOT NULL` — the onboarding form enforces this before insert; no schema change required.
+- Auth settings change via the backend auth configuration (auto-confirm email on, signups enabled) plus enabling the managed Google provider.
+- No database migration is needed; the profile/role rows are already created by the `handle_new_user` trigger and the `getOrCreateMyProfile` server function.
+- The `_authenticated` gate stays as-is; it is behaving correctly by redirecting sessionless users.
