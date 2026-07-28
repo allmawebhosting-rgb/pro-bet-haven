@@ -30,7 +30,27 @@ function derivePassword(w: string) {
 function AuthPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [whatsapp, setWhatsapp] = useState("");
+
+  async function handleGoogle() {
+    setGoogleLoading(true);
+    try {
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: `${window.location.origin}/auth/callback`,
+      });
+      if (result.error) {
+        toast.error(result.error.message || "Google sign-in failed");
+        setGoogleLoading(false);
+        return;
+      }
+      if (result.redirected) return;
+      navigate({ to: "/auth/callback" });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Google sign-in failed");
+      setGoogleLoading(false);
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
