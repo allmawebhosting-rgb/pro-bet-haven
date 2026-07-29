@@ -180,25 +180,42 @@ function Dashboard() {
   const showTour = !profile.tour_completed && !!announcementsQ.data;
 
   return (
-    <div className="min-h-screen">
-      {/* Channel header — Telegram style */}
-      <header className="sticky top-0 z-40 border-b border-border/40 backdrop-blur-xl bg-background/85">
-        <div className="mx-auto max-w-2xl px-3 sm:px-4 h-16 flex items-center gap-3">
+    <div className="min-h-screen relative">
+      {/* Ambient aurora backdrop */}
+      <div
+        className="fixed inset-0 -z-10 pointer-events-none opacity-70"
+        style={{
+          background:
+            "radial-gradient(ellipse 60% 40% at 20% 0%, oklch(0.82 0.14 85 / 8%), transparent 60%), radial-gradient(ellipse 50% 30% at 80% 10%, oklch(0.62 0.13 75 / 6%), transparent 60%)",
+        }}
+      />
+
+      {/* Channel header — premium Telegram style */}
+      <header className="sticky top-0 z-40 border-b border-gold/15 backdrop-blur-2xl bg-background/80">
+        <div
+          className="absolute inset-0 pointer-events-none opacity-40"
+          style={{
+            background:
+              "linear-gradient(180deg, oklch(0.82 0.14 85 / 4%), transparent 60%)",
+          }}
+        />
+        <div className="relative mx-auto max-w-2xl px-3 sm:px-4 h-16 flex items-center gap-3">
           <div className="relative shrink-0">
-            <div className="h-11 w-11 rounded-full gold-bg grid place-items-center font-display text-lg font-bold text-primary-foreground shadow-[0_0_20px_-4px_var(--gold)]">
+            <div className="absolute inset-0 rounded-full gold-bg blur-md opacity-60" />
+            <div className="relative h-11 w-11 rounded-full grid place-items-center font-display text-xl font-bold text-primary-foreground shadow-[0_0_24px_-4px_var(--gold)] gold-bg ring-2 ring-background">
               {meta.hue}
             </div>
             <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-green-500 border-2 border-background" />
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">
-              <h1 className="font-semibold text-[15px] truncate">{meta.name}</h1>
+              <h1 className="font-display text-[17px] tracking-tight truncate">{meta.name}</h1>
               <BadgeCheck className="h-4 w-4 text-gold shrink-0 fill-gold/20" />
             </div>
-            <div className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+            <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-1.5">
               <span>{meta.subs} subscribers</span>
-              <span className="h-1 w-1 rounded-full bg-muted-foreground/50" />
-              <span className="text-green-500/90">online</span>
+              <span className="h-1 w-1 rounded-full bg-gold/50" />
+              <span className="text-gold/80">Private · Fixed picks</span>
             </div>
           </div>
           <div className="flex items-center gap-1">
@@ -207,14 +224,31 @@ function Dashboard() {
             ) : (
               <span className="rounded-full glass px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Free</span>
             )}
-            <Link to="/admin" className="p-2 rounded-full hover:bg-muted/40" title="Admin"><Settings2 className="h-4 w-4 text-muted-foreground" /></Link>
+            {isAdmin && (
+              <Link to="/admin" className="p-2 rounded-full hover:bg-gold/10" title="Admin"><Settings2 className="h-4 w-4 text-gold" /></Link>
+            )}
             <button onClick={signOut} className="p-2 rounded-full hover:bg-muted/40" title="Sign out"><LogOut className="h-4 w-4 text-muted-foreground" /></button>
           </div>
         </div>
 
-        {/* Pinned bar */}
-        {nextRelease && (
-          <div className="border-t border-border/30 bg-background/60">
+        {/* Pinned bar (admin pinned message OR countdown fallback) */}
+        {pinnedMsg ? (
+          <div className="border-t border-gold/20 bg-gradient-to-r from-gold/5 via-transparent to-gold/5">
+            <div className="mx-auto max-w-2xl px-3 sm:px-4 py-2 flex items-center gap-3">
+              <Pin className="h-3.5 w-3.5 text-gold rotate-45 shrink-0" />
+              <div className="min-w-0 flex-1">
+                <div className="text-[10px] uppercase tracking-widest text-gold">Pinned</div>
+                <div className="text-xs text-foreground/90 truncate">{pinnedMsg.title || pinnedMsg.body}</div>
+              </div>
+              {nextRelease && (
+                <div className="text-[11px] font-mono tabular-nums text-gold/80 shrink-0">
+                  <Countdown target={nextRelease} onZero={() => predictionsQ.refetch()} compact />
+                </div>
+              )}
+            </div>
+          </div>
+        ) : nextRelease ? (
+          <div className="border-t border-gold/20 bg-gradient-to-r from-gold/5 via-transparent to-gold/5">
             <div className="mx-auto max-w-2xl px-3 sm:px-4 py-2 flex items-center gap-3">
               <Pin className="h-3.5 w-3.5 text-gold rotate-45 shrink-0" />
               <div className="min-w-0 flex-1">
@@ -229,11 +263,11 @@ function Dashboard() {
               <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
             </div>
           </div>
-        )}
+        ) : null}
       </header>
 
       {/* Feed */}
-      <main className="mx-auto max-w-2xl px-3 sm:px-4 py-4 pb-32 space-y-2">
+      <main className="mx-auto max-w-2xl px-3 sm:px-4 py-4 pb-40 space-y-2">
         {/* Welcome system message */}
         <SystemMessage>
           You joined <b className="text-gold">{meta.name}</b>. Broadcasts are automatic.
@@ -285,7 +319,80 @@ function Dashboard() {
           </div>
         )}
       </main>
+
+      {/* Admin inline composer */}
+      {isAdmin && <AdminComposer currentChannel={profile.channel} />}
+
+      {/* Welcome tour */}
+      {showTour && (
+        <WelcomeTour
+          channelLetter={profile.channel}
+          onDone={async () => {
+            try {
+              await doMarkTour();
+              qc.invalidateQueries({ queryKey: ["profile"] });
+            } catch {
+              /* noop */
+            }
+          }}
+        />
+      )}
     </div>
+  );
+}
+
+function WelcomeTour({ channelLetter, onDone }: { channelLetter: "A" | "B"; onDone: () => void }) {
+  const [step, setStep] = useState(0);
+  const steps = [
+    {
+      title: `Welcome to Channel ${channelLetter}`,
+      body: "This is your private feed. New broadcasts appear here at the bottom, just like Telegram.",
+    },
+    {
+      title: "Pinned countdown",
+      body: "The pinned bar at the top shows when the next fixed pick drops. Watch it — that's when messages arrive.",
+    },
+    {
+      title: "2 free picks unlocked",
+      body: "Try any two picks free. Everything else stays behind a gold lock until you upgrade to VIP.",
+    },
+  ];
+  const s = steps[step];
+  const last = step === steps.length - 1;
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-50 grid place-items-center px-4 bg-background/70 backdrop-blur-md"
+      >
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          key={step}
+          className="w-full max-w-sm glass-strong rounded-3xl p-7 text-center relative overflow-hidden"
+        >
+          <div className="absolute -top-16 -right-16 h-40 w-40 rounded-full gold-bg opacity-20 blur-3xl" />
+          <div className="relative">
+            <div className="text-[10px] uppercase tracking-[0.35em] text-gold">Tour · {step + 1} / {steps.length}</div>
+            <h2 className="mt-3 font-display text-3xl">{s.title}</h2>
+            <p className="mt-3 text-sm text-muted-foreground">{s.body}</p>
+
+            <div className="mt-6 flex items-center gap-2">
+              <button onClick={onDone} className="rounded-full glass px-4 py-2.5 text-xs">Skip</button>
+              <button
+                onClick={() => (last ? onDone() : setStep(step + 1))}
+                className="flex-1 rounded-full gold-bg px-5 py-2.5 text-sm font-semibold"
+              >
+                {last ? "Enter channel" : "Next"}
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
   );
 }
 
