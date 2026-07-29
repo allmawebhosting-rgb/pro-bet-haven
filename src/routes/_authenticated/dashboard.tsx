@@ -1,8 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useMemo } from "react";
-import { motion } from "framer-motion";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   BadgeCheck, Bell, LogOut, Lock, Crown, Eye, Pin, Trophy,
   Settings2, Timer, Flame, Volume2, ChevronDown,
@@ -11,6 +11,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Countdown } from "@/components/Countdown";
 import { toast } from "sonner";
 import { getOrCreateMyProfile } from "@/lib/profile.functions";
+import { amIAdmin, markTourCompleted } from "@/lib/channel.functions";
+import { AdminComposer } from "@/components/channel/AdminComposer";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -27,6 +29,7 @@ type Profile = {
   id: string; full_name: string; whatsapp: string; channel: "A" | "B";
   status: "active" | "disabled"; created_at: string;
   is_vip: boolean; free_picks_claimed: number;
+  tour_completed?: boolean;
 };
 type Prediction = {
   id: string; channel: "A" | "B"; match_name: string; league: string;
@@ -35,7 +38,10 @@ type Prediction = {
   tier: "free" | "vip";
 };
 type ChannelSettings = { channel: "A" | "B"; next_release_at: string; release_interval_minutes: number };
-type Announcement = { id: string; target: "all" | "A" | "B"; title: string; body: string; created_at: string };
+type Announcement = {
+  id: string; target: "all" | "A" | "B"; title: string; body: string; created_at: string;
+  channel?: "A" | "B" | null; pinned?: boolean; image_url?: string | null;
+};
 
 const CHANNEL_META: Record<"A" | "B", { name: string; handle: string; subs: string; hue: string }> = {
   A: { name: "Aurum Fixed · Alpha", handle: "@aurum_alpha", subs: "12,847", hue: "A" },
