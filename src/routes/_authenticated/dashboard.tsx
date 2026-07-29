@@ -176,6 +176,8 @@ function Dashboard() {
   const meta = CHANNEL_META[profile.channel];
   const freeRemaining = Math.max(0, 2 - (profile.free_picks_claimed ?? 0));
   const nextRelease = settingsQ.data?.next_release_at;
+  const pinnedMsg = (announcementsQ.data ?? []).filter((a) => a.pinned).slice(-1)[0];
+  const showTour = !profile.tour_completed && !!announcementsQ.data;
 
   return (
     <div className="min-h-screen">
