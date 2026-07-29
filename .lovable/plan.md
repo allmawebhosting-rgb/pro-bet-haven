@@ -1,102 +1,77 @@
-## Goal
+# Premium Channels, Inline Admin Composer, and Onboarding Redesign
 
-Rebrand the site as a "Complete Fixed Matches" service with a bold VIP tipster tone, give every new member 2 free picks with no stake required, and redesign the dashboard and admin panel from amateur to premium Noir & Gold.
+## 1. Premium channel design (dashboard)
 
-## 1. Rebrand (landing + copy)
+Elevate the Telegram-style feed into a signature Aurum surface:
 
-Update `src/routes/index.tsx`, `src/routes/register.tsx`, `src/routes/auth.tsx`, and metadata:
+- **Channel header**: replace flat bar with a layered gold-foil header — deep charcoal gradient, subtle grain, embossed monogram avatar (gold-plated ring with inner black core), verified check as a gold seal, channel name in Cormorant/Instrument Serif display, subscriber count + "Private • Fixed Picks" chip in fine caps. Sticky on scroll with a translucent glass blur.
+- **Pinned bar**: dedicated pinned message slot below the header (gold hairline border, pin icon, next release countdown when active).
+- **Message bubbles**: 
+  - Text broadcasts → dark card with soft inner glow, gold accent line on the left, timestamp + view count + a subtle "eyes" icon.
+  - Fixed match picks → premium card variant with league chip, teams row, kickoff, pick, odds pill, confidence dots (gold), and a "FIXED" gold foil badge for VIP tier.
+  - Media messages → framed image with gold hairline and caption below.
+  - Locked/VIP → blurred bubble with a gold padlock and "Unlock VIP" inline CTA.
+- **Date separators**: centered gold hairline with small caps chip ("Today", "Yesterday", date).
+- **System messages**: centered subtle chip (welcome, "You're subscribed to Channel A", "2 free picks unlocked").
+- **Motion**: bubbles fade+slide in on mount; new incoming message pulses gold briefly.
 
-- New name direction: **Aurum Fixed** (kept close to existing "Aurum" brand — user can rename later).
-- Hero headline: "100% Guaranteed Fixed Matches — Delivered Daily".
-- Sub-headline: "Insider odds. Verified sources. Your first 2 picks are on us — no stake, no risk."
-- CTA buttons: "Claim 2 Free Fixed Picks" (primary) and "How it works" (ghost).
-- Add a "How it works" 3-step strip: Register → Get 2 free fixed picks → Upgrade to VIP for daily wins.
-- Add a "Recent wins" proof strip (static teaser cards, blurred until signup).
-- Add responsible-info footer note ("18+, for entertainment") to stay publishable.
-- Update all `head()` metadata: title/description/og for landing, dashboard, admin, auth.
+## 2. Inline admin composer (bottom of channel)
 
-## 2. Free trial mechanic ("2 free picks after signup")
+Admins (via `has_role`) see a fixed composer docked at the bottom of the channel:
 
-Chosen: Free tier after signup.
+- Telegram-style layout: `+` attach menu on the left, textarea in the middle, gold send button on the right.
+- **Attach menu**: Fixed match pick, Image, Pin toggle.
+  - Selecting "Fixed match pick" swaps the composer into a compact match form (teams, league, kickoff, pick, odds, confidence, tier free/VIP) with a "Back to text" chevron.
+  - "Image" opens file picker → uploads to a new `channel-media` storage bucket → attaches URL preview above textarea.
+  - "Pin toggle" marks the outgoing message as pinned (replaces current pinned).
+- **Target selector**: small chip above composer ("Post to: This channel / Both channels") defaulting to the channel currently viewed.
+- Non-admins never see the composer.
+- Send calls a new server fn that routes to `announcements` (text/image) or `predictions` (match pick) based on type.
 
-Data model additions (single migration):
+## 3. Multi-step onboarding
 
-- Add `predictions.tier` enum column: `free` | `vip` (default `vip`).
-- Add `profiles.free_picks_claimed` int (default 0) and `profiles.is_vip` boolean (default false).
-- RLS policy update on `predictions` so members see: their channel picks where `(tier = 'free' AND free_picks_claimed < 2)` OR `is_vip = true`, keeping the existing published/release gating.
+Replace the single-form `/register` with a polished 3-step flow (progress dots at top, gold accent on active step):
 
-Server functions (in `src/lib/`):
+1. **Step 1 — Name**: Full name field, "Continue" button, Google option below divider.
+2. **Step 2 — WhatsApp**: phone input with country code hint, why-we-need-it microcopy.
+3. **Step 3 — Confirm**: review card + terms mini-copy + "Enter Aurum" button.
 
-- `claimFreePick` — increments `free_picks_claimed` up to 2, guarded server-side.
-- `requestVipUpgrade` — no payment yet, just marks a request row + shows contact/WhatsApp CTA (owner arranges VIP manually until payments are wired). Deferred: real payments.
+Framer Motion slide transitions between steps, back arrow, keyboard Enter advances.
 
-Dashboard behavior:
+**Channel reveal**: after successful signup (or Google onboarding completion), route to a full-screen `/welcome` interstitial:
 
-- Feed shows the 2 free picks unlocked by default, remaining picks appear as locked cards with a "Unlock VIP" overlay CTA.
-- Locked cards blur match name + prediction, show league + kickoff + confidence teaser.
+- Dark stage, spotlight beam, animated "Assigning your channel..." with rotating A/B letters.
+- Gold envelope opens revealing "Channel A" (or B) with the monogram and a "2 free picks unlocked" line.
+- "Enter Channel" gold button → dashboard.
 
-## 3. Dashboard redesign — Noir & Gold, feed layout
+**Welcome tour** (first-time only, tracked via a `profiles.tour_completed` flag): 3 lightweight coach-mark tooltips over the dashboard — pinned bar, feed, VIP lock — with Skip/Next. Dismisses and sets flag.
 
-Rewrite `src/routes/_authenticated/dashboard.tsx` from a sidebar layout to a chronological feed:
+The existing `/onboarding` (Google WhatsApp capture) gets the same premium visual language and feeds into the channel reveal.
 
-```text
-┌────────────────────────────────────────────┐
-│ Top bar: logo · channel chip · profile     │
-├────────────────────────────────────────────┤
-│ Hero strip: greeting + big countdown       │
-│ + "X free picks remaining" + Upgrade CTA   │
-├────────────────────────────────────────────┤
-│ Stat pills row: Win rate · Live · Streak   │
-├────────────────────────────────────────────┤
-│ FEED (single column, wide cards):          │
-│  ─ Today marker                            │
-│  · Fixed pick card (unlocked, gold border) │
-│  · Fixed pick card (unlocked)              │
-│  · Locked pick card (blurred + CTA)        │
-│  ─ Yesterday marker                        │
-│  · Announcement card                       │
-│  · Pick card                               │
-└────────────────────────────────────────────┘
-```
+## Technical details
 
-Craft details:
+**Database migration**:
+- Add `announcements.image_url text`, `announcements.pinned boolean default false`, `announcements.author_id uuid`, `announcements.channel channel_code null` (nullable = broadcast to all).
+- Add `announcements` INSERT policy for admins only via `has_role(auth.uid(),'admin')`.
+- Add `profiles.tour_completed boolean not null default false`.
+- Create `channel-media` public storage bucket via the storage tool with an INSERT policy limited to admins on `storage.objects`.
+- Add `predictions` INSERT policy for admins so inline match-pick posts work through the authenticated client (currently admin fns use service role, which will keep working).
 
-- Card = deep black `#0d0d0d`, hairline gold border, gold accent bar on the left of unlocked "FIXED" picks, `Trophy` icon in a small gold chip.
-- Locked cards: `backdrop-blur` overlay + lock icon + "Unlock full slate — Go VIP".
-- Prediction line rendered oversize in serif display font; league/kickoff in small caps tracking-wide muted.
-- Confidence rendered as 5 gold pips; add a subtle "GUARANTEED" gold badge for confidence 5.
-- Countdown reused, but placed inside the hero strip with tighter tabular numerals and a soft gold glow ring.
-- Announcements interleaved in the feed as distinct "Broadcast" cards (Bell icon, gold underline).
-- Mobile: full-width feed cards, sticky top bar; date markers become chips.
+**Server functions** (`src/lib/channel.functions.ts`):
+- `postAnnouncement({ body, image_url?, pinned?, target })` — admin-gated, inserts into `announcements`; if `pinned`, unsets other pinned rows in that channel first.
+- `postMatchPick({ ...fields, target, tier })` — admin-gated, inserts into `predictions` with `published=true, release_at=now()`.
+- `markTourCompleted()` — updates `profiles.tour_completed`.
+- All use `has_role` check via `context.supabase.rpc('has_role', ...)`; admin writes bypass RLS via `supabaseAdmin` after auth check.
 
-## 4. Admin redesign
+**Client work**:
+- `src/routes/_authenticated/dashboard.tsx` — restructure feed with new bubble variants, pinned slot, admin composer at bottom (sticky), tour overlay.
+- New `src/components/channel/*`: `ChannelHeader`, `MessageBubble` (variants: text, match, media, locked, system), `DateSeparator`, `PinnedBar`, `AdminComposer`, `MatchPickForm`, `ChannelRevealStage`, `WelcomeTour`.
+- New `src/routes/register.tsx` — refactor into stepper with Framer Motion.
+- New `src/routes/_authenticated/welcome.tsx` — channel reveal.
+- Update `src/routes/_authenticated/onboarding.tsx` — match new visual language, redirect to `/welcome` after complete.
+- Update `src/routes/auth.callback.tsx` — after profile create, redirect to `/welcome` on first login.
+- Styling: extend `src/styles.css` tokens (gold-foil gradient, inner-glow shadow, grain layer) and utilities.
 
-Rewrite `src/routes/_authenticated/admin.tsx` (viewing it first) to a proper admin console:
+**Out of scope**: payments, message editing/deletion (admin can still manage from `/admin`), reactions, replies, realtime subscriptions (rely on existing query invalidation + a 20s poll on the feed).
 
-- Left rail with sections: Overview · Predictions · Members · Announcements · Channels.
-- Top KPI row: Total members, Channel A / B split, Last 7 days signups, Active picks, VIP members.
-- Predictions section: table with inline edit, tier toggle (Free/VIP), publish toggle, release-at picker; "New pick" opens a slide-over form (not a raw stacked form).
-- Members table: search, filter by channel/status, actions (toggle status, switch channel, mark VIP).
-- Announcements: composer at top, list of recent announcements below.
-- Channels: countdown editor + interval per channel, with a live preview of the countdown.
-- Design tokens match the dashboard (Noir & Gold), consistent buttons, tables with zebra rows + gold header underline.
-
-## 5. Design system tightening
-
-- Confirm `src/styles.css` tokens for `--gold` `#c9a84c` and `--gold-soft` `#f0d78c`; add `--shadow-gold` and `--gradient-gold` if missing.
-- Add utilities: `.gold-border` (1px `color-mix` gold with alpha), `.card-noir` (bg + border + shadow), `.chip-gold`.
-- Keep serif display font for headings, sans for UI; no hardcoded colors in components.
-
-## Technical notes
-
-- Migration: `ALTER TABLE predictions ADD COLUMN tier`, enum type, `ALTER TABLE profiles ADD COLUMN free_picks_claimed`, `ADD COLUMN is_vip`; replace `predictions_select_by_channel` policy with the tier-aware one; GRANT unchanged (columns inherit).
-- Server functions live in `src/lib/*.functions.ts` (client-safe path) and use `requireSupabaseAuth`.
-- New admin actions in `src/lib/admin.functions.ts`: `setPredictionTier`, `setMemberVip`.
-- No new external packages needed. Framer Motion already present for entrance animations.
-- Do not touch auth flow in this pass; that's the previous open item and stays separate.
-
-## Out of scope (this plan)
-
-- Real payments / Stripe. VIP upgrade is a manual contact flow for now.
-- WhatsApp broadcasting integration.
-- Renaming the brand from "Aurum" — cosmetic copy only; deeper rename can be a follow-up.
+Proceed?
