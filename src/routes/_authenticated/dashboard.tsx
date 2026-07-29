@@ -97,12 +97,16 @@ function Dashboard() {
   });
 
   const announcementsQ = useQuery({
-    queryKey: ["announcements"],
+    queryKey: ["announcements", channel],
+    enabled: !!channel,
     queryFn: async (): Promise<Announcement[]> => {
-      const { data } = await supabase.from("announcements").select("*").order("created_at", { ascending: true }).limit(30);
-      return (data as Announcement[]) ?? [];
+      const { data } = await supabase.from("announcements").select("*").order("created_at", { ascending: true }).limit(50);
+      const rows = (data as Announcement[]) ?? [];
+      return rows.filter((a) => a.target === "all" || a.target === channel);
     },
   });
+
+  const isAdmin = !!adminQ.data?.admin;
 
   useEffect(() => {
     if (!channel) return;
