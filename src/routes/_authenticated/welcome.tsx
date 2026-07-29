@@ -24,7 +24,10 @@ function WelcomePage() {
   const q = useQuery({ queryKey: ["profile"], queryFn: () => fetchProfile() });
   const [phase, setPhase] = useState<"assigning" | "revealed">("assigning");
 
-  const channel = q.data && "profile" in q.data ? (q.data.profile.channel as "A" | "B") : undefined;
+  const channel =
+    q.data && "profile" in q.data && q.data.profile
+      ? (q.data.profile.channel as "A" | "B")
+      : undefined;
 
   useEffect(() => {
     if (!channel) return;
