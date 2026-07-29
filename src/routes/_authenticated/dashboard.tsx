@@ -50,12 +50,21 @@ const CHANNEL_META: Record<"A" | "B", { name: string; handle: string; subs: stri
 
 function Dashboard() {
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const fetchProfile = useServerFn(getOrCreateMyProfile);
+  const fetchAdmin = useServerFn(amIAdmin);
+  const doMarkTour = useServerFn(markTourCompleted);
 
   const profileQ = useQuery({
     queryKey: ["profile"],
     queryFn: async () => await fetchProfile(),
     retry: 2, retryDelay: 500,
+  });
+
+  const adminQ = useQuery({
+    queryKey: ["am-admin"],
+    queryFn: async () => await fetchAdmin(),
+    staleTime: 60_000,
   });
 
   useEffect(() => {
