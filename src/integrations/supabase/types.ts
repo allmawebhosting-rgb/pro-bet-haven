@@ -16,23 +16,35 @@ export type Database = {
     Tables: {
       announcements: {
         Row: {
+          author_id: string | null
           body: string
+          channel: Database["public"]["Enums"]["channel_code"] | null
           created_at: string
           id: string
+          image_url: string | null
+          pinned: boolean
           target: Database["public"]["Enums"]["announcement_target"]
           title: string
         }
         Insert: {
+          author_id?: string | null
           body: string
+          channel?: Database["public"]["Enums"]["channel_code"] | null
           created_at?: string
           id?: string
+          image_url?: string | null
+          pinned?: boolean
           target?: Database["public"]["Enums"]["announcement_target"]
           title: string
         }
         Update: {
+          author_id?: string | null
           body?: string
+          channel?: Database["public"]["Enums"]["channel_code"] | null
           created_at?: string
           id?: string
+          image_url?: string | null
+          pinned?: boolean
           target?: Database["public"]["Enums"]["announcement_target"]
           title?: string
         }
@@ -120,6 +132,7 @@ export type Database = {
           is_vip: boolean
           last_login: string | null
           status: Database["public"]["Enums"]["user_status"]
+          tour_completed: boolean
           whatsapp: string
         }
         Insert: {
@@ -131,6 +144,7 @@ export type Database = {
           is_vip?: boolean
           last_login?: string | null
           status?: Database["public"]["Enums"]["user_status"]
+          tour_completed?: boolean
           whatsapp: string
         }
         Update: {
@@ -142,6 +156,7 @@ export type Database = {
           is_vip?: boolean
           last_login?: string | null
           status?: Database["public"]["Enums"]["user_status"]
+          tour_completed?: boolean
           whatsapp?: string
         }
         Relationships: []

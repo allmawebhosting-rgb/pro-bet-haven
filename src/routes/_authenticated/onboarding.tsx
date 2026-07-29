@@ -56,7 +56,7 @@ function OnboardingPage() {
       await submit({ data: parsed.data });
       await queryClient.invalidateQueries({ queryKey: ["profile"] });
       toast.success("Welcome to Aurum");
-      navigate({ to: "/dashboard" });
+      navigate({ to: "/welcome" });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Something went wrong");
     } finally {
