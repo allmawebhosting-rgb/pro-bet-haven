@@ -1,33 +1,31 @@
 ## Goal
 
-1. Members never learn they were split into two channels — they just see "their" private channel.
-2. No auto-zoom on mobile when tapping inputs/textareas.
+After signing in or registering, the user should land in their channel automatically — no refresh, no re-entering details.
 
-## 1. Remove all A/B disclosure (user-facing only)
+## What I confirmed in the code
 
-The backend split stays exactly as is (`profiles.channel`, targeting, settings). Only the presentation changes.
+- `src/routes/auth.tsx` calls `supabase.auth.signInWithPassword(...)` and immediately `navigate({ to: "/dashboard" })`.
+- `src/routes/register.tsx` calls `signUp(...)`, optionally `signInWithPassword(...)`, then immediately `navigate({ to: "/welcome" })`.
+- `src/routes/_authenticated/route.tsx` gates the subtree with `beforeLoad: supabase.auth.getUser()` and redirects to `/auth` on any error or missing user.
+- `src/routes/__root.tsx` subscribes to `onAuthStateChange` and calls `router.invalidate()` + `queryClient.invalidateQueries()` on `SIGNED_IN`.
 
-Dashboard (`src/routes/_authenticated/dashboard.tsx`):
-- Replace the per-letter `CHANNEL_META` map with one neutral identity: name "Aurum Fixed · VIP Signals", a gold monogram (crest/"A" logo mark, not the channel letter), one subscriber count.
-- Avatar shows the brand mark instead of the "A"/"B" letter (`MessageShell`, header).
-- Pinned bar: drop "· Channel {letter}" — just "Every N min".
-- Welcome tour: "Welcome to your private channel" instead of "Welcome to Channel A".
-- Keep `channelLetter` props internally only if needed for data, but render nothing from them.
+So the navigation to a protected route happens in the same tick as the auth state change, while the root subscriber is invalidating the router. The protected gate's `getUser()` is a network call that can resolve before the session is persisted/attached, and any error is treated as "not signed in" → bounced back to `/auth`. That's consistent with the reported symptom, but I have not yet reproduced it in the browser, so **step 1 of this plan is to reproduce and confirm** before changing behavior.
 
-Welcome interstitial (`src/routes/_authenticated/welcome.tsx`):
-- Rework from "Assigning your channel / two private circles / A vs B flicker / You're in Channel B" into a neutral "Preparing your private channel" → "You're in" reveal with the brand crest, keeping the same cinematic gold animation and the "2 free picks unlocked" card.
+## Plan
 
-Register/onboarding/landing copy: already says "your private channel" with no letters — leave as is.
+1. **Reproduce** the flow in a headless browser against the running app: register a fresh number, then sign in, capturing console errors, network 401s, and the final URL at each step. This confirms whether the bounce comes from the gate's `getUser()`, from an unconfirmed-email signup (no session returned), or from the invalidate/navigate race.
 
-Admin side keeps the full Channel A / Channel B / Both targeting in the composer and admin console (admins should still see the split).
+2. **Make sign-in wait for a real session before navigating** (`src/routes/auth.tsx`): after `signInWithPassword`, use the returned `data.session` (falling back to a short `onAuthStateChange`/`getSession` wait) and only then `navigate({ to: "/dashboard", replace: true })`. Surface a clear error instead of silently staying on the form.
 
-## 2. Fix mobile auto-zoom
+3. **Same for registration** (`src/routes/register.tsx`): after `signUp`, if no session comes back, sign in and wait for the session before `navigate({ to: "/welcome", replace: true })`. If the backend requires email confirmation for these synthetic `wa_*@aurum.members` addresses, no session can ever be issued — in that case enable auto-confirm for email signups so the WhatsApp-number flow works as designed (this is what the flow already assumes).
 
-iOS Safari zooms whenever a focused field's font-size is under 16px. Several fields use `text-sm` (14px) — composer textarea, match form inputs, auth/register/onboarding fields.
+4. **Harden the protected gate** (`src/routes/_authenticated/route.tsx`): treat a transient `getUser()` failure differently from "no user" — check the local session first and only redirect to `/auth` when there genuinely is no session, so a slow or flaky call no longer kicks a freshly signed-in user out.
 
-- Add a global rule in `src/styles.css`: on coarse-pointer / max-width 767px, force `input, textarea, select` to `font-size: 16px` (visual size unchanged elsewhere).
-- Add `maximum-scale=1, viewport-fit=cover` to the viewport meta in `src/routes/__root.tsx` as a belt-and-braces guard (pinch-zoom on content stays available on Android; iOS respects the font-size fix).
+5. **Avoid the invalidate/navigate race** (`src/routes/__root.tsx`): keep the single subscriber, but let the explicit post-login navigation win instead of being cancelled by a concurrent `router.invalidate()`.
+
+6. **Verify end to end** in the browser: fresh registration lands on `/welcome` → `/dashboard`, and a returning sign-in lands directly on `/dashboard`, both on the first attempt with no refresh.
 
 ## Technical notes
 
-Frontend/presentation only — no migration, no server function changes, no change to how users are actually assigned.
+- No database schema changes. Step 3 may require one auth setting change (auto-confirm email signups), which is required by the existing WhatsApp-as-email design.
+- Navigations use `replace: true` so the back button doesn't return to the sign-in form after a successful login.
