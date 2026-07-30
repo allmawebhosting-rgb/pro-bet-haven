@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard, ListChecks, Users, Megaphone, Radio, Settings as SettingsIcon,
-  Plus, X, Crown, Search,
+  Plus, X, Crown, Search, Inbox,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Logo } from "@/components/Logo";
@@ -15,6 +15,7 @@ import {
   updateChannelSettingsAdmin, createAnnouncementAdmin, grantAdminSelf, adminAnalytics,
   setMemberVipAdmin,
 } from "@/lib/admin.functions";
+import { RequestsTab } from "@/components/admin/RequestsTab";
 import { updateSiteSettings } from "@/lib/site.functions";
 import { useSiteSettings } from "@/lib/site-context";
 
@@ -25,7 +26,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
   component: AdminPage,
 });
 
-type Tab = "overview" | "predictions" | "users" | "announcements" | "channels" | "settings";
+type Tab = "overview" | "predictions" | "requests" | "users" | "announcements" | "channels" | "settings";
 
 function AdminPage() {
   const qc = useQueryClient();
@@ -84,6 +85,7 @@ function AdminPage() {
 const navItems: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
   { id: "predictions", label: "Fixed matches", icon: ListChecks },
+  { id: "requests", label: "Requests", icon: Inbox },
   { id: "users", label: "Members", icon: Users },
   { id: "announcements", label: "Broadcasts", icon: Megaphone },
   { id: "channels", label: "Channels", icon: Radio },
@@ -127,6 +129,7 @@ function AdminShell() {
             <motion.div key={tab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
               {tab === "overview" && <OverviewTab />}
               {tab === "predictions" && <PredictionsTab />}
+              {tab === "requests" && <RequestsTab />}
               {tab === "channels" && <ChannelsTab />}
               {tab === "users" && <UsersTab />}
               {tab === "announcements" && <AnnouncementsTab />}

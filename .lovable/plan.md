@@ -1,31 +1,34 @@
 ## Goal
 
-After signing in or registering, the user should land in their channel automatically — no refresh, no re-entering details.
+Members can request a VIP upgrade, ask to buy the next game, or send a free-form message from inside the app. Those land in a new **Requests** tab on the admin page, where the admin can reply — and the member sees the reply back in their dashboard.
 
-## What I confirmed in the code
+## Database
 
-- `src/routes/auth.tsx` calls `supabase.auth.signInWithPassword(...)` and immediately `navigate({ to: "/dashboard" })`.
-- `src/routes/register.tsx` calls `signUp(...)`, optionally `signInWithPassword(...)`, then immediately `navigate({ to: "/welcome" })`.
-- `src/routes/_authenticated/route.tsx` gates the subtree with `beforeLoad: supabase.auth.getUser()` and redirects to `/auth` on any error or missing user.
-- `src/routes/__root.tsx` subscribes to `onAuthStateChange` and calls `router.invalidate()` + `queryClient.invalidateQueries()` on `SIGNED_IN`.
+Two new tables (with grants + RLS):
 
-So the navigation to a protected route happens in the same tick as the auth state change, while the root subscriber is invalidating the router. The protected gate's `getUser()` is a network call that can resolve before the session is persisted/attached, and any error is treated as "not signed in" → bounced back to `/auth`. That's consistent with the reported symptom, but I have not yet reproduced it in the browser, so **step 1 of this plan is to reproduce and confirm** before changing behavior.
+- `member_requests` — `user_id`, `kind` (`upgrade` | `next_game` | `general`), `subject`, `status` (`open` | `answered` | `closed`), `last_message_at`, timestamps.
+- `request_messages` — `request_id`, `sender_id`, `sender_role` (`member` | `admin`), `body`, `created_at`.
 
-## Plan
+Access rules in plain English:
+- A member can create a request and read/write messages only on their own requests.
+- Admins can read every request and every message, reply, and change a request's status.
+- Nobody else can see anything.
 
-1. **Reproduce** the flow in a headless browser against the running app: register a fresh number, then sign in, capturing console errors, network 401s, and the final URL at each step. This confirms whether the bounce comes from the gate's `getUser()`, from an unconfirmed-email signup (no session returned), or from the invalidate/navigate race.
+## Member side (dashboard)
 
-2. **Make sign-in wait for a real session before navigating** (`src/routes/auth.tsx`): after `signInWithPassword`, use the returned `data.session` (falling back to a short `onAuthStateChange`/`getSession` wait) and only then `navigate({ to: "/dashboard", replace: true })`. Surface a clear error instead of silently staying on the form.
+- Replace the WhatsApp link on the VIP CTA with a "Request VIP upgrade" button that opens a small composer (pre-filled subject, optional note).
+- Add a "Request this game" action on locked/upcoming picks, sending a `next_game` request that references the match.
+- Add a compact **Messages** panel on the dashboard listing the member's requests with unread/answered state; opening one shows the thread and lets them reply.
 
-3. **Same for registration** (`src/routes/register.tsx`): after `signUp`, if no session comes back, sign in and wait for the session before `navigate({ to: "/welcome", replace: true })`. If the backend requires email confirmation for these synthetic `wa_*@aurum.members` addresses, no session can ever be issued — in that case enable auto-confirm for email signups so the WhatsApp-number flow works as designed (this is what the flow already assumes).
+## Admin side
 
-4. **Harden the protected gate** (`src/routes/_authenticated/route.tsx`): treat a transient `getUser()` failure differently from "no user" — check the local session first and only redirect to `/auth` when there genuinely is no session, so a slow or flaky call no longer kicks a freshly signed-in user out.
-
-5. **Avoid the invalidate/navigate race** (`src/routes/__root.tsx`): keep the single subscriber, but let the explicit post-login navigation win instead of being cancelled by a concurrent `router.invalidate()`.
-
-6. **Verify end to end** in the browser: fresh registration lands on `/welcome` → `/dashboard`, and a returning sign-in lands directly on `/dashboard`, both on the first attempt with no refresh.
+- New `requests` tab in `src/routes/_authenticated/admin.tsx`, alongside the existing tabs.
+- Left: list of requests with member name, WhatsApp, kind badge, status, and last activity; filter by status/kind.
+- Right: the message thread with a reply box. Admin actions on a thread: reply, mark answered/closed, and a one-click **Grant VIP** for `upgrade` requests (reuses the existing VIP toggle).
+- Show an unread count badge on the Requests tab.
 
 ## Technical notes
 
-- No database schema changes. Step 3 may require one auth setting change (auto-confirm email signups), which is required by the existing WhatsApp-as-email design.
-- Navigations use `replace: true` so the back button doesn't return to the sign-in form after a successful login.
+- New `src/lib/requests.functions.ts` with authenticated server functions: `createRequest`, `listMyRequests`, `listRequestMessages`, `postMessage` (member scope), plus admin-scoped `listRequestsAdmin`, `replyRequestAdmin`, `setRequestStatusAdmin` — following the existing `assertAdmin` pattern in `src/lib/admin.functions.ts`.
+- Message body validated with length limits before insert.
+- Polling refresh via TanStack Query (no realtime) to keep it simple; can be upgraded later.

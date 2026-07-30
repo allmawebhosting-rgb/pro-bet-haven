@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { getOrCreateMyProfile } from "@/lib/profile.functions";
 import { amIAdmin, markTourCompleted, updateLastSeen } from "@/lib/channel.functions";
 import { AdminComposer } from "@/components/channel/AdminComposer";
+import { RequestCenterProvider, useRequestCenter } from "@/components/requests/RequestCenter";
 
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -243,6 +244,7 @@ function Dashboard() {
   const showTour = !profile.tour_completed && !!announcementsQ.data;
 
   return (
+    <RequestCenterProvider>
     <div className="min-h-screen relative">
       {/* Ambient aurora backdrop */}
       <div
@@ -383,13 +385,13 @@ function Dashboard() {
               <p className="mt-1.5 text-sm text-muted-foreground">
                 VIP members receive every broadcast on this channel plus WhatsApp delivery.
               </p>
-              <a
-                href="https://wa.me/10000000000?text=I%20want%20to%20upgrade%20to%20VIP"
-                target="_blank" rel="noreferrer"
+              <RequestCta
+                kind="upgrade"
+                subject="VIP upgrade request"
+                draft="I want to upgrade to VIP. Please tell me how to pay."
+                label="Request VIP upgrade"
                 className="mt-3 inline-flex items-center gap-2 rounded-full gold-bg px-4 py-2 text-xs font-semibold"
-              >
-                <Crown className="h-3.5 w-3.5" /> Contact to go VIP
-              </a>
+              />
               <MessageMeta views={randViews(item_key("cta"))} time={new Date()} />
             </MessageShell>
           </div>
@@ -436,6 +438,7 @@ function Dashboard() {
         />
       )}
     </div>
+    </RequestCenterProvider>
   );
 }
 
@@ -584,9 +587,13 @@ function NextMatchCard({ p, isVip, onZero }: { p: Prediction; isVip: boolean; on
             {new Date(p.kickoff_at).toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
           </div>
           {locked && (
-            <a href="#upgrade" className="mt-4 inline-flex items-center gap-1.5 rounded-full gold-bg px-4 py-2 text-[11px] font-semibold">
-              <Crown className="h-3 w-3" /> Unlock this match
-            </a>
+            <RequestCta
+              kind="next_game"
+              subject="Buy the next game"
+              draft={`I want to buy the next game (kickoff ${new Date(p.kickoff_at).toLocaleString()}).`}
+              label="Request this match"
+              className="mt-4 inline-flex items-center gap-1.5 rounded-full gold-bg px-4 py-2 text-[11px] font-semibold"
+            />
           )}
         </div>
       </div>
@@ -661,11 +668,32 @@ function LockedBubble({ idx, channelLetter }: { idx: number; channelLetter: "A" 
         <div className="text-[9px] uppercase tracking-widest text-gold">Prediction</div>
         <div className="font-display text-xl">████ █ ██</div>
       </div>
-      <a href="#upgrade" className="mt-3 inline-flex items-center gap-1.5 rounded-full gold-bg px-3.5 py-1.5 text-[11px] font-semibold">
-        <Crown className="h-3 w-3" /> Unlock this broadcast
-      </a>
+      <RequestCta
+        kind="next_game"
+        subject="Buy the next game"
+        draft="I want to buy access to this locked broadcast."
+        label="Request this broadcast"
+        className="mt-3 inline-flex items-center gap-1.5 rounded-full gold-bg px-3.5 py-1.5 text-[11px] font-semibold"
+      />
       <MessageMeta views={String(2100 + idx * 137)} time={new Date()} />
     </MessageShell>
+  );
+}
+
+function RequestCta({
+  kind, subject, draft, label, className,
+}: {
+  kind: "upgrade" | "next_game" | "general";
+  subject: string;
+  draft?: string;
+  label: string;
+  className?: string;
+}) {
+  const { open } = useRequestCenter();
+  return (
+    <button type="button" onClick={() => open({ kind, subject, draft })} className={className}>
+      <Crown className="h-3.5 w-3.5" /> {label}
+    </button>
   );
 }
 
