@@ -1,18 +1,19 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   BadgeCheck, Bell, LogOut, Lock, Crown, Eye, Pin, Trophy,
-  Settings2, Timer, Flame, Volume2, ChevronDown,
+  Settings2, Timer, Flame, Volume2, ChevronDown, ArrowDown, CalendarClock,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Countdown } from "@/components/Countdown";
 import { toast } from "sonner";
 import { getOrCreateMyProfile } from "@/lib/profile.functions";
-import { amIAdmin, markTourCompleted } from "@/lib/channel.functions";
+import { amIAdmin, markTourCompleted, updateLastSeen } from "@/lib/channel.functions";
 import { AdminComposer } from "@/components/channel/AdminComposer";
+
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
