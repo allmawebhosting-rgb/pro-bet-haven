@@ -43,9 +43,11 @@ type Announcement = {
   channel?: "A" | "B" | null; pinned?: boolean; image_url?: string | null;
 };
 
-const CHANNEL_META: Record<"A" | "B", { name: string; handle: string; subs: string; hue: string }> = {
-  A: { name: "Aurum Fixed · Alpha", handle: "@aurum_alpha", subs: "12,847", hue: "A" },
-  B: { name: "Aurum Fixed · Bravo", handle: "@aurum_bravo", subs: "9,412", hue: "B" },
+const CHANNEL_META = {
+  name: "Aurum Fixed · VIP Signals",
+  handle: "@aurumfixed",
+  subs: "12,847",
+  mark: "AF",
 };
 
 function Dashboard() {
