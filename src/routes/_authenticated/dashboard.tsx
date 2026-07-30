@@ -650,31 +650,6 @@ function AnnouncementBubble({ a, channelLetter, unseen }: { a: Announcement; cha
   );
 }
 
-function LockedBubble({ idx, channelLetter }: { idx: number; channelLetter: "A" | "B" }) {
-  return (
-    <MessageShell channelLetter={channelLetter} tone="locked">
-      <div className="flex items-center gap-1.5">
-        <Lock className="h-3.5 w-3.5 text-gold" />
-        <span className="text-[10px] uppercase tracking-widest text-gold font-semibold">VIP only</span>
-        <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Premier League</span>
-      </div>
-      <div className="mt-2 font-display text-xl blur-[6px] select-none">██████ vs ██████</div>
-      <div className="text-[11px] text-muted-foreground blur-sm select-none">Kick-off hidden</div>
-      <div className="mt-3 rounded-xl bg-background/40 border border-border/60 px-3 py-2 blur-[5px] select-none">
-        <div className="text-[9px] uppercase tracking-widest text-gold">Prediction</div>
-        <div className="font-display text-xl">████ █ ██</div>
-      </div>
-      <RequestCta
-        kind="next_game"
-        subject="Buy the next game"
-        draft="I want to buy access to this locked broadcast."
-        label="Request this broadcast"
-        className="mt-3 inline-flex items-center gap-1.5 rounded-full gold-bg px-3.5 py-1.5 text-[11px] font-semibold"
-      />
-      <MessageMeta views={String(2100 + idx * 137)} time={new Date()} />
-    </MessageShell>
-  );
-}
 
 function RequestCta({
   kind, subject, draft, label, className,
