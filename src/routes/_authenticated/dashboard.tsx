@@ -680,6 +680,23 @@ function LockedBubble({ idx, channelLetter }: { idx: number; channelLetter: "A" 
   );
 }
 
+function RequestCta({
+  kind, subject, draft, label, className,
+}: {
+  kind: "upgrade" | "next_game" | "general";
+  subject: string;
+  draft?: string;
+  label: string;
+  className?: string;
+}) {
+  const { open } = useRequestCenter();
+  return (
+    <button type="button" onClick={() => open({ kind, subject, draft })} className={className}>
+      <Crown className="h-3.5 w-3.5" /> {label}
+    </button>
+  );
+}
+
 function SystemMessage({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex justify-center py-2">
