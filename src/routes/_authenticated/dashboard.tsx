@@ -252,41 +252,30 @@ function Dashboard() {
       />
 
       {/* Channel header — premium Telegram style */}
-      <header className="sticky top-0 z-40 border-b border-gold/15 backdrop-blur-2xl bg-background/80">
-        <div
-          className="absolute inset-0 pointer-events-none opacity-40"
-          style={{
-            background:
-              "linear-gradient(180deg, oklch(0.82 0.14 85 / 4%), transparent 60%)",
-          }}
-        />
-        <div className="relative mx-auto max-w-2xl px-3 sm:px-4 h-16 flex items-center gap-3">
+      <header className="sticky top-0 z-40 border-b border-gold/12 backdrop-blur-2xl bg-background/85">
+        <div className="relative mx-auto max-w-2xl px-3 sm:px-4 h-14 flex items-center gap-3">
           <div className="relative shrink-0">
-            <div className="absolute inset-0 rounded-full gold-bg blur-md opacity-60" />
-            <div className="relative h-11 w-11 rounded-full grid place-items-center font-display text-sm font-bold tracking-tight text-primary-foreground shadow-[0_0_24px_-4px_var(--gold)] gold-bg ring-2 ring-background">
+            <div className="relative h-9 w-9 rounded-full grid place-items-center font-display text-[13px] font-semibold tracking-tight text-gold border border-gold/35 bg-gold/[0.07]">
               {meta.mark}
             </div>
-            <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-green-500 border-2 border-background" />
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">
-              <h1 className="font-display text-[17px] tracking-tight truncate">{meta.name}</h1>
-              <BadgeCheck className="h-4 w-4 text-gold shrink-0 fill-gold/20" />
+              <h1 className="font-display text-[16px] tracking-tight truncate">{meta.name}</h1>
+              <BadgeCheck className="h-3.5 w-3.5 text-gold/60 shrink-0" />
             </div>
-            <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-1.5">
-              <span>{meta.subs} subscribers</span>
-              <span className="h-1 w-1 rounded-full bg-gold/50" />
-              <span className="text-gold/80">Private · Fixed picks</span>
+            <div className="text-[10px] tracking-[0.16em] uppercase text-muted-foreground/80 truncate">
+              {meta.subs} subscribers · Private
             </div>
           </div>
           <div className="flex items-center gap-1">
             {isVip ? (
-              <span className="rounded-full gold-bg px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider inline-flex items-center gap-1"><Crown className="h-3 w-3" />VIP</span>
+              <span className="rounded-full border border-gold/45 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.2em] text-gold inline-flex items-center gap-1"><Crown className="h-2.5 w-2.5" />VIP</span>
             ) : (
-              <span className="rounded-full glass px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Free</span>
+              <span className="rounded-full border border-border px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Free</span>
             )}
             {isAdmin && (
-              <Link to="/admin" className="p-2 rounded-full hover:bg-gold/10" title="Admin"><Settings2 className="h-4 w-4 text-gold" /></Link>
+              <Link to="/admin" className="p-2 rounded-full hover:bg-gold/10" title="Admin"><Settings2 className="h-4 w-4 text-gold/80" /></Link>
             )}
             <button onClick={signOut} className="p-2 rounded-full hover:bg-muted/40" title="Sign out"><LogOut className="h-4 w-4 text-muted-foreground" /></button>
           </div>
@@ -294,12 +283,12 @@ function Dashboard() {
 
         {/* Pinned bar (admin pinned message OR countdown fallback) */}
         {pinnedMsg ? (
-          <div className="border-t border-gold/20 bg-gradient-to-r from-gold/5 via-transparent to-gold/5">
-            <div className="mx-auto max-w-2xl px-3 sm:px-4 py-2 flex items-center gap-3">
-              <Pin className="h-3.5 w-3.5 text-gold rotate-45 shrink-0" />
+          <div className="border-t border-gold/12">
+            <div className="mx-auto max-w-2xl px-3 sm:px-4 py-1.5 flex items-center gap-3">
+              <Pin className="h-3 w-3 text-gold/70 rotate-45 shrink-0" />
               <div className="min-w-0 flex-1">
-                <div className="text-[10px] uppercase tracking-widest text-gold">Pinned</div>
-                <div className="text-xs text-foreground/90 truncate">{pinnedMsg.title || pinnedMsg.body}</div>
+                <div className="text-[9px] uppercase tracking-[0.3em] text-gold/70">Pinned</div>
+                <div className="text-xs text-foreground/80 truncate">{pinnedMsg.title || pinnedMsg.body}</div>
               </div>
               {nextRelease && (
                 <div className="text-[11px] font-mono tabular-nums text-gold/80 shrink-0">
@@ -309,19 +298,18 @@ function Dashboard() {
             </div>
           </div>
         ) : nextRelease ? (
-          <div className="border-t border-gold/20 bg-gradient-to-r from-gold/5 via-transparent to-gold/5">
-            <div className="mx-auto max-w-2xl px-3 sm:px-4 py-2 flex items-center gap-3">
-              <Pin className="h-3.5 w-3.5 text-gold rotate-45 shrink-0" />
+          <div className="border-t border-gold/12">
+            <div className="mx-auto max-w-2xl px-3 sm:px-4 py-1.5 flex items-center gap-3">
+              <Pin className="h-3 w-3 text-gold/70 rotate-45 shrink-0" />
               <div className="min-w-0 flex-1">
-                <div className="text-[10px] uppercase tracking-widest text-gold">Pinned · Next drop</div>
+                <div className="text-[9px] uppercase tracking-[0.3em] text-gold/70">Next drop</div>
                 <div className="text-xs text-muted-foreground truncate">
-                  Every {settingsQ.data?.release_interval_minutes ?? 60} min · Private feed
+                  Every {settingsQ.data?.release_interval_minutes ?? 60} min
                 </div>
               </div>
-              <div className="text-xs font-mono tabular-nums text-gold shrink-0">
+              <div className="text-[11px] font-mono tabular-nums text-gold shrink-0">
                 <Countdown target={nextRelease} onZero={() => predictionsQ.refetch()} compact />
               </div>
-              <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
             </div>
           </div>
         ) : null}
