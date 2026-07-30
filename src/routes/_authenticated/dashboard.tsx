@@ -595,21 +595,23 @@ function PickBubble({ p, channelLetter, unseen }: { p: Prediction; channelLetter
         {unseen && <NewBadge />}
       </div>
 
-      <div className="mt-2 font-display text-xl sm:text-2xl leading-tight">
-        {p.home_team} <span className="text-muted-foreground text-base">vs</span> {p.away_team}
+      <div className="mt-2.5 font-display text-2xl sm:text-[28px] leading-[1.15]">
+        {p.home_team} <span className="text-muted-foreground/70 text-base font-sans font-light">vs</span> {p.away_team}
       </div>
-      <div className="mt-0.5 text-[11px] text-muted-foreground flex items-center gap-1.5">
-        <Timer className="h-3 w-3" /> Kick-off {new Date(p.kickoff_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+      <div className="mt-1 text-[11px] text-muted-foreground/80 flex items-center gap-1.5">
+        <Timer className="h-3 w-3 opacity-70" /> Kick-off {new Date(p.kickoff_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
       </div>
 
-      <div className="mt-3 rounded-xl bg-background/40 border border-gold/25 px-3 py-2">
-        <div className="text-[9px] uppercase tracking-widest text-gold">Prediction</div>
-        <div className="font-display text-xl gold-text leading-tight">{p.prediction}</div>
-        <div className="mt-1.5 flex items-center gap-3 text-[11px]">
-          {p.odds != null && <span>Odds <b className="text-gold">{p.odds}</b></span>}
+      <div className="mt-4 rounded-xl border border-gold/20 bg-background/50 px-4 py-3">
+        <div className="text-[9px] uppercase tracking-[0.3em] text-gold/70">Prediction</div>
+        <div className="mt-1 font-display text-2xl gold-text leading-tight">{p.prediction}</div>
+        <div className="mt-2.5 flex items-center justify-between text-[11px]">
+          <span className="text-muted-foreground">
+            {p.odds != null ? <>Odds <b className="text-gold font-semibold tabular-nums">{p.odds}</b></> : <>&nbsp;</>}
+          </span>
           <span className="inline-flex items-center gap-1">
             {Array.from({ length: 5 }).map((_, k) => (
-              <span key={k} className={`h-1.5 w-1.5 rounded-full ${k < p.confidence ? "bg-gold" : "bg-muted"}`} />
+              <span key={k} className={`h-1 w-1 rounded-full ${k < p.confidence ? "bg-gold" : "bg-muted"}`} />
             ))}
           </span>
         </div>
@@ -623,15 +625,16 @@ function PickBubble({ p, channelLetter, unseen }: { p: Prediction; channelLetter
 function AnnouncementBubble({ a, channelLetter, unseen }: { a: Announcement; channelLetter: "A" | "B"; unseen?: boolean }) {
   return (
     <MessageShell channelLetter={channelLetter} tone="broadcast">
-      <div className="flex items-center gap-1.5">
-        <Bell className="h-3.5 w-3.5 text-gold" />
-        <span className="text-[10px] uppercase tracking-widest text-gold font-semibold">Broadcast</span>
+      <div className="flex items-center gap-2">
+        <Bell className="h-3 w-3 text-gold/70" />
+        <span className="text-[10px] uppercase tracking-[0.28em] text-gold/80">Broadcast</span>
         {unseen && <NewBadge />}
       </div>
 
-      <h3 className="mt-1 font-display text-lg leading-tight">{a.title}</h3>
-      <p className="mt-1 text-sm text-foreground/85 whitespace-pre-wrap">{a.body}</p>
+      <h3 className="mt-2 font-display text-xl leading-tight">{a.title}</h3>
+      <p className="mt-1.5 text-sm leading-relaxed text-foreground/80 whitespace-pre-wrap">{a.body}</p>
       <MessageMeta views={randViews(a.id)} time={new Date(a.created_at)} />
+
     </MessageShell>
   );
 }
