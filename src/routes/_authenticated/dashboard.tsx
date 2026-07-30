@@ -437,6 +437,7 @@ function Dashboard() {
         />
       )}
     </div>
+    </RequestCenterProvider>
   );
 }
 
