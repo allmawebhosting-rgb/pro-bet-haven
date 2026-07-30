@@ -746,6 +746,3 @@ function FeedSkeleton() {
     </div>
   );
 }
-
-/* Trophy import kept for tree-shake friendliness; ensures no dead-import warnings */
-export const _icons_used = { Trophy };
