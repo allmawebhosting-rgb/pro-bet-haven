@@ -339,9 +339,10 @@ function Dashboard() {
         {nextMatch && <NextMatchCard p={nextMatch} isVip={isVip} onZero={() => predictionsQ.refetch()} />}
 
         {feed.length === 0 && (
-          <div className="py-16 text-center">
-            <Volume2 className="h-8 w-8 text-muted-foreground/40 mx-auto" />
-            <p className="mt-3 text-sm text-muted-foreground">No broadcasts yet. Watch the pinned countdown.</p>
+          <div className="py-20 text-center">
+            <div className="mx-auto h-px w-16 bg-gold/25" />
+            <p className="mt-5 font-display text-xl text-foreground/80">No broadcasts yet</p>
+            <p className="mt-1 text-xs text-muted-foreground">The next drop appears here automatically.</p>
           </div>
         )}
 
@@ -351,18 +352,20 @@ function Dashboard() {
           const isFirstUnread = firstUnreadTs !== null && item.ts === firstUnreadTs;
           const unseen = baseline !== null && item.ts > baseline;
           return (
-            <div key={item.kind === "pick" ? item.pick.id : item.kind === "announcement" ? item.announcement.id : `l${item.i}`}>
+            <div key={item.kind === "pick" ? item.pick.id : item.announcement.id} className="pt-1">
               {showDate && <DateChip d={new Date(item.ts)} />}
               {isFirstUnread && (
                 <div ref={unreadAnchorRef} className="scroll-mt-32">
                   <UnreadDivider count={unreadCount} />
                 </div>
               )}
-              <div className={unseen ? "relative rounded-2xl -mx-1 px-1 py-0.5 bg-gold/[0.04]" : undefined}>
+              <div>
                 {item.kind === "pick" && <PickBubble p={item.pick} channelLetter={profile.channel} unseen={unseen} />}
                 {item.kind === "announcement" && <AnnouncementBubble a={item.announcement} channelLetter={profile.channel} unseen={unseen} />}
-                {item.kind === "locked" && <LockedBubble idx={item.i} channelLetter={profile.channel} />}
               </div>
+            </div>
+          );
+        })}
             </div>
           );
         })}
