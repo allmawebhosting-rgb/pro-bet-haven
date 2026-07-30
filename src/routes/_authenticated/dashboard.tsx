@@ -518,16 +518,82 @@ function MessageMeta({ views, time, pinned }: { views: string; time: Date; pinne
   );
 }
 
-function PickBubble({ p, channelLetter }: { p: Prediction; channelLetter: "A" | "B" }) {
+function NewBadge() {
+  return (
+    <span className="rounded-md bg-gold/15 border border-gold/40 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest text-gold">
+      New
+    </span>
+  );
+}
+
+function UnreadDivider({ count }: { count: number }) {
+  return (
+    <div className="relative flex items-center gap-3 py-4">
+      <span className="h-px flex-1 bg-gradient-to-r from-transparent to-gold/50" />
+      <span className="rounded-full border border-gold/40 bg-gold/10 px-3 py-1 text-[10px] uppercase tracking-[0.25em] text-gold whitespace-nowrap">
+        {count} unread {count === 1 ? "message" : "messages"}
+      </span>
+      <span className="h-px flex-1 bg-gradient-to-l from-transparent to-gold/50" />
+    </div>
+  );
+}
+
+function NextMatchCard({ p, isVip, onZero }: { p: Prediction; isVip: boolean; onZero: () => void }) {
+  const locked = !isVip && p.tier === "vip";
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="relative overflow-hidden rounded-3xl card-noir border border-gold/25 p-5 my-3"
+    >
+      <div
+        className="absolute inset-0 pointer-events-none opacity-70"
+        style={{
+          background:
+            "radial-gradient(ellipse 70% 60% at 50% -10%, oklch(0.82 0.14 85 / 12%), transparent 65%)",
+        }}
+      />
+      <div className="relative">
+        <div className="flex items-center justify-center gap-2">
+          <CalendarClock className="h-3.5 w-3.5 text-gold" />
+          <span className="text-[10px] uppercase tracking-[0.3em] text-gold">Next match kicks off in</span>
+        </div>
+
+        <div className="mt-4">
+          <Countdown target={p.kickoff_at} onZero={onZero} />
+        </div>
+
+        <div className="mt-5 text-center">
+          <div className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">{p.league}</div>
+          <div className={`mt-1 font-display text-2xl leading-tight ${locked ? "blur-[6px] select-none" : ""}`}>
+            {locked ? "██████ vs ██████" : <>{p.home_team} <span className="text-muted-foreground text-lg">vs</span> {p.away_team}</>}
+          </div>
+          <div className="mt-1 text-[11px] text-muted-foreground">
+            {new Date(p.kickoff_at).toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+          </div>
+          {locked && (
+            <a href="#upgrade" className="mt-4 inline-flex items-center gap-1.5 rounded-full gold-bg px-4 py-2 text-[11px] font-semibold">
+              <Crown className="h-3 w-3" /> Unlock this match
+            </a>
+          )}
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+function PickBubble({ p, channelLetter, unseen }: { p: Prediction; channelLetter: "A" | "B"; unseen?: boolean }) {
   const isGuaranteed = p.confidence >= 5;
   return (
     <MessageShell channelLetter={channelLetter} tone="fixed">
       <div className="flex items-center gap-1.5 flex-wrap">
         <span className="rounded-md gold-bg px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest">🔒 Fixed</span>
         <span className="text-[10px] uppercase tracking-widest text-muted-foreground">{p.league}</span>
+        {unseen && <NewBadge />}
         {p.tier === "free" && <span className="rounded-md glass px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest text-gold">Free</span>}
         {isGuaranteed && <span className="rounded-md glass px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest text-gold inline-flex items-center gap-0.5"><Flame className="h-2.5 w-2.5" />Lock</span>}
       </div>
+
       <div className="mt-2 font-display text-xl sm:text-2xl leading-tight">
         {p.home_team} <span className="text-muted-foreground text-base">vs</span> {p.away_team}
       </div>
