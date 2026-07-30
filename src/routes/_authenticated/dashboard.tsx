@@ -243,6 +243,7 @@ function Dashboard() {
   const showTour = !profile.tour_completed && !!announcementsQ.data;
 
   return (
+    <RequestCenterProvider>
     <div className="min-h-screen relative">
       {/* Ambient aurora backdrop */}
       <div
