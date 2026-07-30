@@ -93,6 +93,18 @@ export const markTourCompleted = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export const updateLastSeen = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ seen_at: z.string().min(1) }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase
+      .from("profiles")
+      .update({ last_seen_at: new Date(data.seen_at).toISOString() })
+      .eq("id", context.userId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 export const amIAdmin = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -102,3 +114,4 @@ export const amIAdmin = createServerFn({ method: "GET" })
     });
     return { admin: !!data };
   });
+
