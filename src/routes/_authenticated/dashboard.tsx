@@ -190,6 +190,18 @@ function Dashboard() {
     return () => window.removeEventListener("scroll", onScroll);
   }, [markSeen]);
 
+  // Resume: jump to the first unread message once, after the feed renders.
+  const resumedRef = useRef(false);
+  useEffect(() => {
+    if (resumedRef.current || baseline === null || firstUnreadTs === null) return;
+    const el = unreadAnchorRef.current;
+    if (!el) return;
+    resumedRef.current = true;
+    requestAnimationFrame(() => el.scrollIntoView({ behavior: "smooth", block: "start" }));
+  }, [baseline, firstUnreadTs, feed.length]);
+
+
+
   /* ---------- next match countdown ---------- */
   const nextMatch = useMemo(() => {
     const now = Date.now();
