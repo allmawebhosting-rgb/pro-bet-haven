@@ -316,7 +316,7 @@ function Dashboard() {
       </header>
 
       {/* Feed */}
-      <main className="mx-auto max-w-2xl px-3 sm:px-4 py-4 pb-40 space-y-2">
+      <main className="mx-auto max-w-2xl px-3 sm:px-4 py-5 pb-40 space-y-3">
         {/* Welcome system message */}
         <SystemMessage>
           You joined <b className="text-gold">{meta.name}</b>. Broadcasts are automatic.
