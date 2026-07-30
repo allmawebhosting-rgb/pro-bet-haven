@@ -71,6 +71,39 @@ export type Database = {
         }
         Relationships: []
       }
+      member_requests: {
+        Row: {
+          created_at: string
+          id: string
+          kind: Database["public"]["Enums"]["request_kind"]
+          last_message_at: string
+          status: Database["public"]["Enums"]["request_status"]
+          subject: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["request_kind"]
+          last_message_at?: string
+          status?: Database["public"]["Enums"]["request_status"]
+          subject: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["request_kind"]
+          last_message_at?: string
+          status?: Database["public"]["Enums"]["request_status"]
+          subject?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       predictions: {
         Row: {
           away_team: string
@@ -164,6 +197,41 @@ export type Database = {
         }
         Relationships: []
       }
+      request_messages: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          request_id: string
+          sender_id: string
+          sender_role: Database["public"]["Enums"]["message_sender_role"]
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          request_id: string
+          sender_id: string
+          sender_role: Database["public"]["Enums"]["message_sender_role"]
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          request_id?: string
+          sender_id?: string
+          sender_role?: Database["public"]["Enums"]["message_sender_role"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "request_messages_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "member_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       site_settings: {
         Row: {
           accent_color: string
@@ -229,7 +297,10 @@ export type Database = {
       announcement_target: "all" | "A" | "B"
       app_role: "admin" | "user"
       channel_code: "A" | "B"
+      message_sender_role: "member" | "admin"
       prediction_tier: "free" | "vip"
+      request_kind: "upgrade" | "next_game" | "general"
+      request_status: "open" | "answered" | "closed"
       user_status: "active" | "disabled"
     }
     CompositeTypes: {
@@ -361,7 +432,10 @@ export const Constants = {
       announcement_target: ["all", "A", "B"],
       app_role: ["admin", "user"],
       channel_code: ["A", "B"],
+      message_sender_role: ["member", "admin"],
       prediction_tier: ["free", "vip"],
+      request_kind: ["upgrade", "next_game", "general"],
+      request_status: ["open", "answered", "closed"],
       user_status: ["active", "disabled"],
     },
   },
