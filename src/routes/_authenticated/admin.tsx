@@ -84,6 +84,7 @@ function AdminPage() {
 const navItems: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
   { id: "predictions", label: "Fixed matches", icon: ListChecks },
+  { id: "requests", label: "Requests", icon: Inbox },
   { id: "users", label: "Members", icon: Users },
   { id: "announcements", label: "Broadcasts", icon: Megaphone },
   { id: "channels", label: "Channels", icon: Radio },
