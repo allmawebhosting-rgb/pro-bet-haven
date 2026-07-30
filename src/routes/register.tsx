@@ -5,6 +5,9 @@ import { z } from "zod";
 import { ArrowLeft, ArrowRight, Check, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { waitForSession } from "@/lib/auth-session";
+import { useServerFn } from "@tanstack/react-start";
+import { useQueryClient } from "@tanstack/react-query";
+import { completeOnboarding } from "@/lib/profile.functions";
 
 import { lovable } from "@/integrations/lovable";
 import { Logo } from "@/components/Logo";
@@ -42,6 +45,8 @@ const STEPS = [
 
 function RegisterPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const saveProfile = useServerFn(completeOnboarding);
   const [step, setStep] = useState(0);
   const [dir, setDir] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -112,6 +117,11 @@ function RegisterPage() {
         session = signInData.session ?? (await waitForSession());
       }
       if (!session) throw new Error("We couldn't start your session. Please try again.");
+
+      // Persist the details we just collected so /welcome never asks again.
+      await saveProfile({ data: { full_name: full_name.trim(), whatsapp: whatsapp.trim() } });
+      await queryClient.invalidateQueries({ queryKey: ["profile"] });
+
       await navigate({ to: "/welcome", replace: true });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Registration failed");

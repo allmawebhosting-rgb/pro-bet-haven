@@ -35,9 +35,17 @@ function OnboardingPage() {
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
-      const meta = (data.user?.user_metadata ?? {}) as { full_name?: string; name?: string };
-      const suggested = (meta.full_name || meta.name || "").trim();
-      if (suggested) setForm((f) => (f.full_name ? f : { ...f, full_name: suggested }));
+      const meta = (data.user?.user_metadata ?? {}) as {
+        full_name?: string;
+        name?: string;
+        whatsapp?: string;
+      };
+      const suggestedName = (meta.full_name || meta.name || "").trim();
+      const suggestedWa = (meta.whatsapp || "").trim();
+      setForm((f) => ({
+        full_name: f.full_name || suggestedName,
+        whatsapp: f.whatsapp || suggestedWa,
+      }));
     });
   }, []);
 
