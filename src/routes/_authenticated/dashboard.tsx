@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { getOrCreateMyProfile } from "@/lib/profile.functions";
 import { amIAdmin, markTourCompleted, updateLastSeen } from "@/lib/channel.functions";
 import { AdminComposer } from "@/components/channel/AdminComposer";
+import { RequestCenterProvider, useRequestCenter } from "@/components/requests/RequestCenter";
 
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
