@@ -112,6 +112,11 @@ function RegisterPage() {
         session = signInData.session ?? (await waitForSession());
       }
       if (!session) throw new Error("We couldn't start your session. Please try again.");
+
+      // Persist the details we just collected so /welcome never asks again.
+      await saveProfile({ data: { full_name: full_name.trim(), whatsapp: whatsapp.trim() } });
+      await queryClient.invalidateQueries({ queryKey: ["profile"] });
+
       await navigate({ to: "/welcome", replace: true });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Registration failed");
