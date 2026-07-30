@@ -325,6 +325,9 @@ function Dashboard() {
           {!isVip && <> You have <b className="text-gold">{freeRemaining} free {freeRemaining === 1 ? "pick" : "picks"}</b> remaining.</>}
         </SystemMessage>
 
+        {/* Next match countdown — premium hero card */}
+        {nextMatch && <NextMatchCard p={nextMatch} isVip={isVip} onZero={() => predictionsQ.refetch()} />}
+
         {feed.length === 0 && (
           <div className="py-16 text-center">
             <Volume2 className="h-8 w-8 text-muted-foreground/40 mx-auto" />
@@ -335,15 +338,25 @@ function Dashboard() {
         {feed.map((item, idx) => {
           const prev = feed[idx - 1];
           const showDate = !prev || !sameDay(new Date(prev.ts), new Date(item.ts));
+          const isFirstUnread = firstUnreadTs !== null && item.ts === firstUnreadTs;
+          const unseen = baseline !== null && item.ts > baseline;
           return (
             <div key={item.kind === "pick" ? item.pick.id : item.kind === "announcement" ? item.announcement.id : `l${item.i}`}>
               {showDate && <DateChip d={new Date(item.ts)} />}
-              {item.kind === "pick" && <PickBubble p={item.pick} channelLetter={profile.channel} />}
-              {item.kind === "announcement" && <AnnouncementBubble a={item.announcement} channelLetter={profile.channel} />}
-              {item.kind === "locked" && <LockedBubble idx={item.i} channelLetter={profile.channel} />}
+              {isFirstUnread && (
+                <div ref={unreadAnchorRef} className="scroll-mt-32">
+                  <UnreadDivider count={unreadCount} />
+                </div>
+              )}
+              <div className={unseen ? "relative rounded-2xl -mx-1 px-1 py-0.5 bg-gold/[0.04]" : undefined}>
+                {item.kind === "pick" && <PickBubble p={item.pick} channelLetter={profile.channel} unseen={unseen} />}
+                {item.kind === "announcement" && <AnnouncementBubble a={item.announcement} channelLetter={profile.channel} unseen={unseen} />}
+                {item.kind === "locked" && <LockedBubble idx={item.i} channelLetter={profile.channel} />}
+              </div>
             </div>
           );
         })}
+
 
         {/* VIP CTA as a channel post */}
         {!isVip && (
