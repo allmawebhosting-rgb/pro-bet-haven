@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard, ListChecks, Users, Megaphone, Radio, Settings as SettingsIcon,
-  Plus, X, Crown, Search,
+  Plus, X, Crown, Search, Inbox,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Logo } from "@/components/Logo";
@@ -15,6 +15,7 @@ import {
   updateChannelSettingsAdmin, createAnnouncementAdmin, grantAdminSelf, adminAnalytics,
   setMemberVipAdmin,
 } from "@/lib/admin.functions";
+import { RequestsTab } from "@/components/admin/RequestsTab";
 import { updateSiteSettings } from "@/lib/site.functions";
 import { useSiteSettings } from "@/lib/site-context";
 
