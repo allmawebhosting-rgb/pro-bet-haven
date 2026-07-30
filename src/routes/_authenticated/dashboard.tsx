@@ -153,7 +153,53 @@ function Dashboard() {
     return [...picks, ...anns, ...locked].sort((a, b) => a.ts - b.ts);
   }, [predictionsQ.data, announcementsQ.data, isVip]);
 
+  /* ---------- seen / unseen tracking ---------- */
+  const pushSeen = useServerFn(updateLastSeen);
+  const [baseline, setBaseline] = useState<number | null>(null);
+  const persistedRef = useRef<number>(0);
+  const unreadAnchorRef = useRef<HTMLDivElement | null>(null);
+  const [atBottom, setAtBottom] = useState(true);
+
+  useEffect(() => {
+    if (!profile || baseline !== null) return;
+    const raw = profile.last_seen_at ?? profile.created_at;
+    const ts = new Date(raw).getTime();
+    setBaseline(Number.isFinite(ts) ? ts : 0);
+    persistedRef.current = Number.isFinite(ts) ? ts : 0;
+  }, [profile, baseline]);
+
+  const newestTs = feed.length ? feed[feed.length - 1].ts : 0;
+  const unreadCount = baseline === null ? 0 : feed.filter((i) => i.ts > baseline).length;
+  const firstUnreadTs = baseline === null ? null : feed.find((i) => i.ts > baseline)?.ts ?? null;
+
+  const markSeen = useCallback(() => {
+    if (!newestTs || newestTs <= persistedRef.current) return;
+    persistedRef.current = newestTs;
+    pushSeen({ data: { seen_at: new Date(newestTs).toISOString() } }).catch(() => {});
+  }, [newestTs, pushSeen]);
+
+  useEffect(() => {
+    const onScroll = () => {
+      const near =
+        window.innerHeight + window.scrollY >= document.body.scrollHeight - 160;
+      setAtBottom(near);
+      if (near) markSeen();
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [markSeen]);
+
+  /* ---------- next match countdown ---------- */
+  const nextMatch = useMemo(() => {
+    const now = Date.now();
+    return (predictionsQ.data ?? [])
+      .filter((p) => p.published && new Date(p.kickoff_at).getTime() > now)
+      .sort((a, b) => new Date(a.kickoff_at).getTime() - new Date(b.kickoff_at).getTime())[0];
+  }, [predictionsQ.data]);
+
   if (profileQ.isLoading) return <FeedSkeleton />;
+
   if (profileQ.isError || !profile) {
     return (
       <div className="min-h-screen grid place-items-center px-4">
