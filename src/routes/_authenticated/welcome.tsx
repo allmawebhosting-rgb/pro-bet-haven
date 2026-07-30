@@ -69,20 +69,17 @@ function WelcomePage() {
             className="glass-strong rounded-3xl p-10"
           >
             <p className="text-[10px] uppercase tracking-[0.4em] text-gold">Aurum Fixed</p>
-            <h1 className="mt-4 font-display text-4xl">Assigning your channel</h1>
-            <p className="mt-2 text-sm text-muted-foreground">Two private circles. You'll enter one.</p>
+            <h1 className="mt-4 font-display text-4xl">Preparing your channel</h1>
+            <p className="mt-2 text-sm text-muted-foreground">Securing your seat in the private circle.</p>
 
-            <div className="mt-10 grid grid-cols-2 gap-4">
-              {(["A", "B"] as const).map((letter, i) => (
-                <motion.div
-                  key={letter}
-                  animate={{ opacity: [0.3, 1, 0.3] }}
-                  transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.4 }}
-                  className="aspect-square rounded-2xl gold-hairline grid place-items-center font-display text-6xl gold-text"
-                >
-                  {letter}
-                </motion.div>
-              ))}
+            <div className="mt-10 grid place-items-center">
+              <motion.div
+                animate={{ opacity: [0.35, 1, 0.35], scale: [0.97, 1, 0.97] }}
+                transition={{ duration: 1.6, repeat: Infinity }}
+                className="h-28 w-28 rounded-full gold-hairline grid place-items-center font-display text-2xl gold-text tracking-tight"
+              >
+                AF
+              </motion.div>
             </div>
           </motion.div>
         ) : (
@@ -97,9 +94,9 @@ function WelcomePage() {
                 initial={{ rotate: -8, scale: 0.8 }}
                 animate={{ rotate: 0, scale: 1 }}
                 transition={{ delay: 0.1 }}
-                className="relative h-28 w-28 rounded-full gold-bg grid place-items-center font-display text-5xl font-bold text-primary-foreground shadow-[0_0_60px_-8px_var(--gold)]"
+                className="relative h-28 w-28 rounded-full gold-bg grid place-items-center font-display text-3xl font-bold text-primary-foreground shadow-[0_0_60px_-8px_var(--gold)]"
               >
-                {channel}
+                AF
                 <span className="absolute -top-2 -right-2 h-8 w-8 rounded-full glass-strong grid place-items-center">
                   <Sparkles className="h-4 w-4 text-gold" />
                 </span>
@@ -108,7 +105,7 @@ function WelcomePage() {
 
             <p className="mt-8 text-[10px] uppercase tracking-[0.4em] text-gold">You're in</p>
             <h1 className="mt-2 font-display text-4xl">
-              Channel <span className="gold-text">{channel}</span>
+              Your <span className="gold-text">private channel</span>
             </h1>
             <p className="mt-3 text-sm text-muted-foreground">
               A private feed of fixed picks — delivered on the channel schedule.
@@ -122,6 +119,7 @@ function WelcomePage() {
                 Try before you upgrade. The rest are VIP-only.
               </p>
             </div>
+
 
             <motion.button
               initial={{ opacity: 0 }}

@@ -46,7 +46,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" },
       { title: "Aurum — Premium Sports Predictions" },
       { name: "description", content: "A private members' circle for premium, carefully researched football predictions. Join today." },
       { property: "og:title", content: "Aurum — Premium Sports Predictions" },

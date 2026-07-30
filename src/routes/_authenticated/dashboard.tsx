@@ -43,9 +43,11 @@ type Announcement = {
   channel?: "A" | "B" | null; pinned?: boolean; image_url?: string | null;
 };
 
-const CHANNEL_META: Record<"A" | "B", { name: string; handle: string; subs: string; hue: string }> = {
-  A: { name: "Aurum Fixed · Alpha", handle: "@aurum_alpha", subs: "12,847", hue: "A" },
-  B: { name: "Aurum Fixed · Bravo", handle: "@aurum_bravo", subs: "9,412", hue: "B" },
+const CHANNEL_META = {
+  name: "Aurum Fixed · VIP Signals",
+  handle: "@aurumfixed",
+  subs: "12,847",
+  mark: "AF",
 };
 
 function Dashboard() {
@@ -173,7 +175,7 @@ function Dashboard() {
     );
   }
 
-  const meta = CHANNEL_META[profile.channel];
+  const meta = CHANNEL_META;
   const freeRemaining = Math.max(0, 2 - (profile.free_picks_claimed ?? 0));
   const nextRelease = settingsQ.data?.next_release_at;
   const pinnedMsg = (announcementsQ.data ?? []).filter((a) => a.pinned).slice(-1)[0];
@@ -202,8 +204,8 @@ function Dashboard() {
         <div className="relative mx-auto max-w-2xl px-3 sm:px-4 h-16 flex items-center gap-3">
           <div className="relative shrink-0">
             <div className="absolute inset-0 rounded-full gold-bg blur-md opacity-60" />
-            <div className="relative h-11 w-11 rounded-full grid place-items-center font-display text-xl font-bold text-primary-foreground shadow-[0_0_24px_-4px_var(--gold)] gold-bg ring-2 ring-background">
-              {meta.hue}
+            <div className="relative h-11 w-11 rounded-full grid place-items-center font-display text-sm font-bold tracking-tight text-primary-foreground shadow-[0_0_24px_-4px_var(--gold)] gold-bg ring-2 ring-background">
+              {meta.mark}
             </div>
             <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-green-500 border-2 border-background" />
           </div>
@@ -254,7 +256,7 @@ function Dashboard() {
               <div className="min-w-0 flex-1">
                 <div className="text-[10px] uppercase tracking-widest text-gold">Pinned · Next drop</div>
                 <div className="text-xs text-muted-foreground truncate">
-                  Every {settingsQ.data?.release_interval_minutes ?? 60} min · Channel {profile.channel}
+                  Every {settingsQ.data?.release_interval_minutes ?? 60} min · Private feed
                 </div>
               </div>
               <div className="text-xs font-mono tabular-nums text-gold shrink-0">
@@ -345,7 +347,7 @@ function WelcomeTour({ channelLetter, onDone }: { channelLetter: "A" | "B"; onDo
   const [step, setStep] = useState(0);
   const steps = [
     {
-      title: `Welcome to Channel ${channelLetter}`,
+      title: "Welcome to your private channel",
       body: "This is your private feed. New broadcasts appear here at the bottom, just like Telegram.",
     },
     {
@@ -412,7 +414,7 @@ function MessageShell({ children, channelLetter, tone = "default" }: {
       className="flex items-end gap-2"
     >
       <div className="h-8 w-8 shrink-0 rounded-full gold-bg grid place-items-center text-[11px] font-bold text-primary-foreground self-start mt-1">
-        {channelLetter}
+        {CHANNEL_META.mark}
       </div>
       <div className={`relative ${toneClass} rounded-2xl rounded-bl-md px-4 py-3 max-w-[85%] sm:max-w-[78%]`}>
         {children}
