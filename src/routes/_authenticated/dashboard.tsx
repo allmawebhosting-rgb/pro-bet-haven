@@ -4,8 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  BadgeCheck, Bell, LogOut, Lock, Crown, Eye, Pin, Trophy,
-  Settings2, Timer, Flame, Volume2, ChevronDown, ArrowDown, CalendarClock,
+  BadgeCheck, Bell, LogOut, Crown, Eye, Pin,
+  Settings2, Timer, ChevronDown, ArrowDown, CalendarClock,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Countdown } from "@/components/Countdown";
