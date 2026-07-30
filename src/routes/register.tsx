@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { z } from "zod";
 import { ArrowLeft, ArrowRight, Check, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { waitForSession } from "@/lib/auth-session";
+
 import { lovable } from "@/integrations/lovable";
 import { Logo } from "@/components/Logo";
 import { toast } from "sonner";
@@ -102,17 +104,22 @@ function RegisterPage() {
       if (signUpError && !signUpError.message.toLowerCase().includes("already")) {
         throw signUpError;
       }
-      if (!data?.session) {
-        const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+      let session = data?.session ?? null;
+      if (!session) {
+        const { data: signInData, error: signInError } =
+          await supabase.auth.signInWithPassword({ email, password });
         if (signInError) throw signInError;
+        session = signInData.session ?? (await waitForSession());
       }
-      navigate({ to: "/welcome" });
+      if (!session) throw new Error("We couldn't start your session. Please try again.");
+      await navigate({ to: "/welcome", replace: true });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Registration failed");
     } finally {
       setLoading(false);
     }
   }
+
 
   return (
     <div className="min-h-screen grid place-items-center px-4 py-16">

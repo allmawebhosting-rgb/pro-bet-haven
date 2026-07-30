@@ -2,6 +2,8 @@ import { createFileRoute, Link, Outlet, useLocation, useNavigate } from "@tansta
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
+import { waitForSession } from "@/lib/auth-session";
+
 import { lovable } from "@/integrations/lovable";
 import { Logo } from "@/components/Logo";
 import { toast } from "sonner";
@@ -65,12 +67,14 @@ function AuthPage() {
     }
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: whatsappToEmail(whatsapp),
         password: derivePassword(whatsapp),
       });
       if (error) throw error;
-      navigate({ to: "/dashboard" });
+      const session = data.session ?? (await waitForSession());
+      if (!session) throw new Error("Sign-in did not complete. Please try again.");
+      await navigate({ to: "/dashboard", replace: true });
     } catch (err) {
       const message = err instanceof Error ? err.message : "";
       const invalid = /invalid login credentials|invalid credentials/i.test(message);
@@ -80,6 +84,7 @@ function AuthPage() {
     }
 
   }
+
 
   return (
     <div className="min-h-screen grid place-items-center px-4 py-16">
