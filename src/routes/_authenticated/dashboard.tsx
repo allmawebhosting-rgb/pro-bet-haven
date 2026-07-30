@@ -601,12 +601,14 @@ function PickBubble({ p, channelLetter, unseen }: { p: Prediction; channelLetter
   const isGuaranteed = p.confidence >= 5;
   return (
     <MessageShell channelLetter={channelLetter} tone="fixed">
-      <div className="flex items-center gap-1.5 flex-wrap">
-        <span className="rounded-md gold-bg px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest">🔒 Fixed</span>
-        <span className="text-[10px] uppercase tracking-widest text-muted-foreground">{p.league}</span>
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-[10px] uppercase tracking-[0.28em] text-gold">Fixed</span>
+        <span className="h-1 w-1 rounded-full bg-gold/40" />
+        <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{p.league}</span>
+        {p.tier === "free" && (
+          <span className="text-[10px] uppercase tracking-[0.2em] text-gold/80">· Free</span>
+        )}
         {unseen && <NewBadge />}
-        {p.tier === "free" && <span className="rounded-md glass px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest text-gold">Free</span>}
-        {isGuaranteed && <span className="rounded-md glass px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest text-gold inline-flex items-center gap-0.5"><Flame className="h-2.5 w-2.5" />Lock</span>}
       </div>
 
       <div className="mt-2 font-display text-xl sm:text-2xl leading-tight">
