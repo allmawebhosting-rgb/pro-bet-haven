@@ -129,6 +129,7 @@ function AdminShell() {
             <motion.div key={tab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
               {tab === "overview" && <OverviewTab />}
               {tab === "predictions" && <PredictionsTab />}
+              {tab === "requests" && <RequestsTab />}
               {tab === "channels" && <ChannelsTab />}
               {tab === "users" && <UsersTab />}
               {tab === "announcements" && <AnnouncementsTab />}
