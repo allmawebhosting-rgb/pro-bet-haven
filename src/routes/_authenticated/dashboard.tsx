@@ -587,9 +587,13 @@ function NextMatchCard({ p, isVip, onZero }: { p: Prediction; isVip: boolean; on
             {new Date(p.kickoff_at).toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
           </div>
           {locked && (
-            <a href="#upgrade" className="mt-4 inline-flex items-center gap-1.5 rounded-full gold-bg px-4 py-2 text-[11px] font-semibold">
-              <Crown className="h-3 w-3" /> Unlock this match
-            </a>
+            <RequestCta
+              kind="next_game"
+              subject="Buy the next game"
+              draft={`I want to buy the next game (kickoff ${new Date(p.kickoff_at).toLocaleString()}).`}
+              label="Request this match"
+              className="mt-4 inline-flex items-center gap-1.5 rounded-full gold-bg px-4 py-2 text-[11px] font-semibold"
+            />
           )}
         </div>
       </div>
