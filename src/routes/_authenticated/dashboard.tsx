@@ -148,7 +148,7 @@ function Dashboard() {
     // ascending (oldest at top, newest at bottom — like Telegram)
     return [...picks, ...anns].sort((a, b) => a.ts - b.ts);
   }, [predictionsQ.data, announcementsQ.data]);
-  }, [predictionsQ.data, announcementsQ.data, isVip]);
+  
 
   /* ---------- seen / unseen tracking ---------- */
   const pushSeen = useServerFn(updateLastSeen);
