@@ -103,13 +103,19 @@ function RootInner() {
 
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "USER_UPDATED") {
+      if (event === "SIGNED_OUT") {
         router.invalidate();
-        if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
+        return;
+      }
+      if (event === "SIGNED_IN" || event === "USER_UPDATED") {
+        // Don't call router.invalidate() here: it races with the explicit
+        // post-login navigation and can cancel it, stranding the user on /auth.
+        queryClient.invalidateQueries();
       }
     });
     return () => sub.subscription.unsubscribe();
   }, [router, queryClient]);
+
 
   return (
     <SiteSettingsProvider settings={(data as SiteSettings) ?? undefined!}>
