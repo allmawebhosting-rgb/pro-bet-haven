@@ -1,77 +1,33 @@
-# Premium Channels, Inline Admin Composer, and Onboarding Redesign
+## Goal
 
-## 1. Premium channel design (dashboard)
+1. Members never learn they were split into two channels — they just see "their" private channel.
+2. No auto-zoom on mobile when tapping inputs/textareas.
 
-Elevate the Telegram-style feed into a signature Aurum surface:
+## 1. Remove all A/B disclosure (user-facing only)
 
-- **Channel header**: replace flat bar with a layered gold-foil header — deep charcoal gradient, subtle grain, embossed monogram avatar (gold-plated ring with inner black core), verified check as a gold seal, channel name in Cormorant/Instrument Serif display, subscriber count + "Private • Fixed Picks" chip in fine caps. Sticky on scroll with a translucent glass blur.
-- **Pinned bar**: dedicated pinned message slot below the header (gold hairline border, pin icon, next release countdown when active).
-- **Message bubbles**: 
-  - Text broadcasts → dark card with soft inner glow, gold accent line on the left, timestamp + view count + a subtle "eyes" icon.
-  - Fixed match picks → premium card variant with league chip, teams row, kickoff, pick, odds pill, confidence dots (gold), and a "FIXED" gold foil badge for VIP tier.
-  - Media messages → framed image with gold hairline and caption below.
-  - Locked/VIP → blurred bubble with a gold padlock and "Unlock VIP" inline CTA.
-- **Date separators**: centered gold hairline with small caps chip ("Today", "Yesterday", date).
-- **System messages**: centered subtle chip (welcome, "You're subscribed to Channel A", "2 free picks unlocked").
-- **Motion**: bubbles fade+slide in on mount; new incoming message pulses gold briefly.
+The backend split stays exactly as is (`profiles.channel`, targeting, settings). Only the presentation changes.
 
-## 2. Inline admin composer (bottom of channel)
+Dashboard (`src/routes/_authenticated/dashboard.tsx`):
+- Replace the per-letter `CHANNEL_META` map with one neutral identity: name "Aurum Fixed · VIP Signals", a gold monogram (crest/"A" logo mark, not the channel letter), one subscriber count.
+- Avatar shows the brand mark instead of the "A"/"B" letter (`MessageShell`, header).
+- Pinned bar: drop "· Channel {letter}" — just "Every N min".
+- Welcome tour: "Welcome to your private channel" instead of "Welcome to Channel A".
+- Keep `channelLetter` props internally only if needed for data, but render nothing from them.
 
-Admins (via `has_role`) see a fixed composer docked at the bottom of the channel:
+Welcome interstitial (`src/routes/_authenticated/welcome.tsx`):
+- Rework from "Assigning your channel / two private circles / A vs B flicker / You're in Channel B" into a neutral "Preparing your private channel" → "You're in" reveal with the brand crest, keeping the same cinematic gold animation and the "2 free picks unlocked" card.
 
-- Telegram-style layout: `+` attach menu on the left, textarea in the middle, gold send button on the right.
-- **Attach menu**: Fixed match pick, Image, Pin toggle.
-  - Selecting "Fixed match pick" swaps the composer into a compact match form (teams, league, kickoff, pick, odds, confidence, tier free/VIP) with a "Back to text" chevron.
-  - "Image" opens file picker → uploads to a new `channel-media` storage bucket → attaches URL preview above textarea.
-  - "Pin toggle" marks the outgoing message as pinned (replaces current pinned).
-- **Target selector**: small chip above composer ("Post to: This channel / Both channels") defaulting to the channel currently viewed.
-- Non-admins never see the composer.
-- Send calls a new server fn that routes to `announcements` (text/image) or `predictions` (match pick) based on type.
+Register/onboarding/landing copy: already says "your private channel" with no letters — leave as is.
 
-## 3. Multi-step onboarding
+Admin side keeps the full Channel A / Channel B / Both targeting in the composer and admin console (admins should still see the split).
 
-Replace the single-form `/register` with a polished 3-step flow (progress dots at top, gold accent on active step):
+## 2. Fix mobile auto-zoom
 
-1. **Step 1 — Name**: Full name field, "Continue" button, Google option below divider.
-2. **Step 2 — WhatsApp**: phone input with country code hint, why-we-need-it microcopy.
-3. **Step 3 — Confirm**: review card + terms mini-copy + "Enter Aurum" button.
+iOS Safari zooms whenever a focused field's font-size is under 16px. Several fields use `text-sm` (14px) — composer textarea, match form inputs, auth/register/onboarding fields.
 
-Framer Motion slide transitions between steps, back arrow, keyboard Enter advances.
+- Add a global rule in `src/styles.css`: on coarse-pointer / max-width 767px, force `input, textarea, select` to `font-size: 16px` (visual size unchanged elsewhere).
+- Add `maximum-scale=1, viewport-fit=cover` to the viewport meta in `src/routes/__root.tsx` as a belt-and-braces guard (pinch-zoom on content stays available on Android; iOS respects the font-size fix).
 
-**Channel reveal**: after successful signup (or Google onboarding completion), route to a full-screen `/welcome` interstitial:
+## Technical notes
 
-- Dark stage, spotlight beam, animated "Assigning your channel..." with rotating A/B letters.
-- Gold envelope opens revealing "Channel A" (or B) with the monogram and a "2 free picks unlocked" line.
-- "Enter Channel" gold button → dashboard.
-
-**Welcome tour** (first-time only, tracked via a `profiles.tour_completed` flag): 3 lightweight coach-mark tooltips over the dashboard — pinned bar, feed, VIP lock — with Skip/Next. Dismisses and sets flag.
-
-The existing `/onboarding` (Google WhatsApp capture) gets the same premium visual language and feeds into the channel reveal.
-
-## Technical details
-
-**Database migration**:
-- Add `announcements.image_url text`, `announcements.pinned boolean default false`, `announcements.author_id uuid`, `announcements.channel channel_code null` (nullable = broadcast to all).
-- Add `announcements` INSERT policy for admins only via `has_role(auth.uid(),'admin')`.
-- Add `profiles.tour_completed boolean not null default false`.
-- Create `channel-media` public storage bucket via the storage tool with an INSERT policy limited to admins on `storage.objects`.
-- Add `predictions` INSERT policy for admins so inline match-pick posts work through the authenticated client (currently admin fns use service role, which will keep working).
-
-**Server functions** (`src/lib/channel.functions.ts`):
-- `postAnnouncement({ body, image_url?, pinned?, target })` — admin-gated, inserts into `announcements`; if `pinned`, unsets other pinned rows in that channel first.
-- `postMatchPick({ ...fields, target, tier })` — admin-gated, inserts into `predictions` with `published=true, release_at=now()`.
-- `markTourCompleted()` — updates `profiles.tour_completed`.
-- All use `has_role` check via `context.supabase.rpc('has_role', ...)`; admin writes bypass RLS via `supabaseAdmin` after auth check.
-
-**Client work**:
-- `src/routes/_authenticated/dashboard.tsx` — restructure feed with new bubble variants, pinned slot, admin composer at bottom (sticky), tour overlay.
-- New `src/components/channel/*`: `ChannelHeader`, `MessageBubble` (variants: text, match, media, locked, system), `DateSeparator`, `PinnedBar`, `AdminComposer`, `MatchPickForm`, `ChannelRevealStage`, `WelcomeTour`.
-- New `src/routes/register.tsx` — refactor into stepper with Framer Motion.
-- New `src/routes/_authenticated/welcome.tsx` — channel reveal.
-- Update `src/routes/_authenticated/onboarding.tsx` — match new visual language, redirect to `/welcome` after complete.
-- Update `src/routes/auth.callback.tsx` — after profile create, redirect to `/welcome` on first login.
-- Styling: extend `src/styles.css` tokens (gold-foil gradient, inner-glow shadow, grain layer) and utilities.
-
-**Out of scope**: payments, message editing/deletion (admin can still manage from `/admin`), reactions, replies, realtime subscriptions (rely on existing query invalidation + a 20s poll on the feed).
-
-Proceed?
+Frontend/presentation only — no migration, no server function changes, no change to how users are actually assigned.
