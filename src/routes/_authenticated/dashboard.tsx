@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   BadgeCheck, Bell, LogOut, Crown, Eye, Pin,
-  Settings2, Timer, ChevronDown, ArrowDown, CalendarClock,
+  Settings2, Timer, ArrowDown, CalendarClock,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Countdown } from "@/components/Countdown";
