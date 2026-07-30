@@ -667,8 +667,8 @@ function SystemMessage({ children }: { children: React.ReactNode }) {
 function DateChip({ d, label }: { d: Date; label?: string }) {
   const text = label ?? formatDay(d);
   return (
-    <div className="flex justify-center py-3 sticky top-[64px] z-10 pointer-events-none">
-      <div className="rounded-full bg-background/85 backdrop-blur-md border border-gold/25 px-3 py-1 text-[10px] uppercase tracking-widest text-gold shadow-lg">
+    <div className="flex justify-center py-4 sticky top-[56px] z-10 pointer-events-none">
+      <div className="rounded-full bg-background/90 backdrop-blur-md border border-gold/15 px-3 py-0.5 text-[9px] uppercase tracking-[0.3em] text-gold/70">
         {text}
       </div>
     </div>
