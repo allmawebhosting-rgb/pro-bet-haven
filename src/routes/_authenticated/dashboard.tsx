@@ -668,9 +668,13 @@ function LockedBubble({ idx, channelLetter }: { idx: number; channelLetter: "A" 
         <div className="text-[9px] uppercase tracking-widest text-gold">Prediction</div>
         <div className="font-display text-xl">████ █ ██</div>
       </div>
-      <a href="#upgrade" className="mt-3 inline-flex items-center gap-1.5 rounded-full gold-bg px-3.5 py-1.5 text-[11px] font-semibold">
-        <Crown className="h-3 w-3" /> Unlock this broadcast
-      </a>
+      <RequestCta
+        kind="next_game"
+        subject="Buy the next game"
+        draft="I want to buy access to this locked broadcast."
+        label="Request this broadcast"
+        className="mt-3 inline-flex items-center gap-1.5 rounded-full gold-bg px-3.5 py-1.5 text-[11px] font-semibold"
+      />
       <MessageMeta views={String(2100 + idx * 137)} time={new Date()} />
     </MessageShell>
   );
