@@ -384,6 +384,28 @@ function Dashboard() {
         )}
       </main>
 
+      {/* Jump to unread / latest */}
+      <AnimatePresence>
+        {unreadCount > 0 && !atBottom && (
+          <motion.button
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 12 }}
+            onClick={() => {
+              const el = unreadAnchorRef.current;
+              if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+              else window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+            }}
+            className="fixed bottom-24 right-4 z-40 inline-flex items-center gap-2 rounded-full gold-bg px-4 py-2.5 text-xs font-semibold shadow-[0_10px_40px_-10px_var(--gold)]"
+          >
+            <ArrowDown className="h-3.5 w-3.5" />
+            {unreadCount} unread
+          </motion.button>
+        )}
+      </AnimatePresence>
+
+
+
       {/* Admin inline composer */}
       {isAdmin && <AdminComposer currentChannel={profile.channel} />}
 
