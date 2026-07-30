@@ -31,7 +31,9 @@ type Profile = {
   status: "active" | "disabled"; created_at: string;
   is_vip: boolean; free_picks_claimed: number;
   tour_completed?: boolean;
+  last_seen_at?: string | null;
 };
+
 type Prediction = {
   id: string; channel: "A" | "B"; match_name: string; league: string;
   home_team: string; away_team: string; kickoff_at: string; prediction: string;
