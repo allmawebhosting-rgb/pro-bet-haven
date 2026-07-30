@@ -366,9 +366,6 @@ function Dashboard() {
             </div>
           );
         })}
-            </div>
-          );
-        })}
 
 
         {/* VIP CTA as a channel post */}
