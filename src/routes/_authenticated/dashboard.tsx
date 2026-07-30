@@ -619,13 +619,15 @@ function PickBubble({ p, channelLetter, unseen }: { p: Prediction; channelLetter
   );
 }
 
-function AnnouncementBubble({ a, channelLetter }: { a: Announcement; channelLetter: "A" | "B" }) {
+function AnnouncementBubble({ a, channelLetter, unseen }: { a: Announcement; channelLetter: "A" | "B"; unseen?: boolean }) {
   return (
     <MessageShell channelLetter={channelLetter} tone="broadcast">
       <div className="flex items-center gap-1.5">
         <Bell className="h-3.5 w-3.5 text-gold" />
         <span className="text-[10px] uppercase tracking-widest text-gold font-semibold">Broadcast</span>
+        {unseen && <NewBadge />}
       </div>
+
       <h3 className="mt-1 font-display text-lg leading-tight">{a.title}</h3>
       <p className="mt-1 text-sm text-foreground/85 whitespace-pre-wrap">{a.body}</p>
       <MessageMeta views={randViews(a.id)} time={new Date(a.created_at)} />
