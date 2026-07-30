@@ -131,6 +131,7 @@ export type Database = {
           id: string
           is_vip: boolean
           last_login: string | null
+          last_seen_at: string
           status: Database["public"]["Enums"]["user_status"]
           tour_completed: boolean
           whatsapp: string
@@ -143,6 +144,7 @@ export type Database = {
           id: string
           is_vip?: boolean
           last_login?: string | null
+          last_seen_at?: string
           status?: Database["public"]["Enums"]["user_status"]
           tour_completed?: boolean
           whatsapp: string
@@ -155,6 +157,7 @@ export type Database = {
           id?: string
           is_vip?: boolean
           last_login?: string | null
+          last_seen_at?: string
           status?: Database["public"]["Enums"]["user_status"]
           tour_completed?: boolean
           whatsapp?: string
