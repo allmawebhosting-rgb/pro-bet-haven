@@ -385,13 +385,13 @@ function Dashboard() {
               <p className="mt-1.5 text-sm text-muted-foreground">
                 VIP members receive every broadcast on this channel plus WhatsApp delivery.
               </p>
-              <a
-                href="https://wa.me/10000000000?text=I%20want%20to%20upgrade%20to%20VIP"
-                target="_blank" rel="noreferrer"
+              <RequestCta
+                kind="upgrade"
+                subject="VIP upgrade request"
+                draft="I want to upgrade to VIP. Please tell me how to pay."
+                label="Request VIP upgrade"
                 className="mt-3 inline-flex items-center gap-2 rounded-full gold-bg px-4 py-2 text-xs font-semibold"
-              >
-                <Crown className="h-3.5 w-3.5" /> Contact to go VIP
-              </a>
+              />
               <MessageMeta views={randViews(item_key("cta"))} time={new Date()} />
             </MessageShell>
           </div>
