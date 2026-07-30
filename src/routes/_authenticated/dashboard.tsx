@@ -175,7 +175,7 @@ function Dashboard() {
     );
   }
 
-  const meta = CHANNEL_META[profile.channel];
+  const meta = CHANNEL_META;
   const freeRemaining = Math.max(0, 2 - (profile.free_picks_claimed ?? 0));
   const nextRelease = settingsQ.data?.next_release_at;
   const pinnedMsg = (announcementsQ.data ?? []).filter((a) => a.pinned).slice(-1)[0];
@@ -204,8 +204,8 @@ function Dashboard() {
         <div className="relative mx-auto max-w-2xl px-3 sm:px-4 h-16 flex items-center gap-3">
           <div className="relative shrink-0">
             <div className="absolute inset-0 rounded-full gold-bg blur-md opacity-60" />
-            <div className="relative h-11 w-11 rounded-full grid place-items-center font-display text-xl font-bold text-primary-foreground shadow-[0_0_24px_-4px_var(--gold)] gold-bg ring-2 ring-background">
-              {meta.hue}
+            <div className="relative h-11 w-11 rounded-full grid place-items-center font-display text-sm font-bold tracking-tight text-primary-foreground shadow-[0_0_24px_-4px_var(--gold)] gold-bg ring-2 ring-background">
+              {meta.mark}
             </div>
             <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-green-500 border-2 border-background" />
           </div>
