@@ -256,7 +256,7 @@ function Dashboard() {
               <div className="min-w-0 flex-1">
                 <div className="text-[10px] uppercase tracking-widest text-gold">Pinned · Next drop</div>
                 <div className="text-xs text-muted-foreground truncate">
-                  Every {settingsQ.data?.release_interval_minutes ?? 60} min · Channel {profile.channel}
+                  Every {settingsQ.data?.release_interval_minutes ?? 60} min · Private feed
                 </div>
               </div>
               <div className="text-xs font-mono tabular-nums text-gold shrink-0">
@@ -347,7 +347,7 @@ function WelcomeTour({ channelLetter, onDone }: { channelLetter: "A" | "B"; onDo
   const [step, setStep] = useState(0);
   const steps = [
     {
-      title: `Welcome to Channel ${channelLetter}`,
+      title: "Welcome to your private channel",
       body: "This is your private feed. New broadcasts appear here at the bottom, just like Telegram.",
     },
     {
@@ -414,7 +414,7 @@ function MessageShell({ children, channelLetter, tone = "default" }: {
       className="flex items-end gap-2"
     >
       <div className="h-8 w-8 shrink-0 rounded-full gold-bg grid place-items-center text-[11px] font-bold text-primary-foreground self-start mt-1">
-        {channelLetter}
+        {CHANNEL_META.mark}
       </div>
       <div className={`relative ${toneClass} rounded-2xl rounded-bl-md px-4 py-3 max-w-[85%] sm:max-w-[78%]`}>
         {children}
