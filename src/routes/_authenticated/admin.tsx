@@ -25,7 +25,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
   component: AdminPage,
 });
 
-type Tab = "overview" | "predictions" | "users" | "announcements" | "channels" | "settings";
+type Tab = "overview" | "predictions" | "requests" | "users" | "announcements" | "channels" | "settings";
 
 function AdminPage() {
   const qc = useQueryClient();
