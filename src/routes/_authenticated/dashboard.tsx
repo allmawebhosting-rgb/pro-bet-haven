@@ -500,18 +500,17 @@ function MessageShell({ children, channelLetter, tone = "default" }: {
 }) {
   const toneClass =
     tone === "fixed" ? "card-fixed" :
-    tone === "locked" ? "card-noir opacity-95" :
-    tone === "broadcast" ? "card-noir border-l-2 border-gold/70" :
+    tone === "broadcast" ? "card-noir border-l border-gold/50" :
     "card-noir";
   return (
     <motion.div
       initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}
-      className="flex items-end gap-2"
+      className="flex items-end gap-2.5"
     >
-      <div className="h-8 w-8 shrink-0 rounded-full gold-bg grid place-items-center text-[11px] font-bold text-primary-foreground self-start mt-1">
+      <div className="h-7 w-7 shrink-0 rounded-full grid place-items-center text-[10px] font-semibold tracking-tight text-gold border border-gold/30 bg-gold/[0.06] self-start mt-1">
         {CHANNEL_META.mark}
       </div>
-      <div className={`relative ${toneClass} rounded-2xl rounded-bl-md px-4 py-3 max-w-[85%] sm:max-w-[78%]`}>
+      <div className={`relative ${toneClass} rounded-2xl rounded-bl-md px-4 py-4 sm:px-5 max-w-[88%] sm:max-w-[78%]`}>
         {children}
       </div>
     </motion.div>
