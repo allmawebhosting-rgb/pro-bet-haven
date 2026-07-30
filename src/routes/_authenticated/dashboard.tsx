@@ -145,13 +145,9 @@ function Dashboard() {
     const anns = (announcementsQ.data ?? []).map((a) => ({
       kind: "announcement" as const, ts: new Date(a.created_at).getTime(), announcement: a,
     }));
-    const locked = !isVip
-      ? Array.from({ length: 3 }).map((_, i) => ({
-          kind: "locked" as const, ts: now - i * 45_000, i,
-        }))
-      : [];
     // ascending (oldest at top, newest at bottom — like Telegram)
-    return [...picks, ...anns, ...locked].sort((a, b) => a.ts - b.ts);
+    return [...picks, ...anns].sort((a, b) => a.ts - b.ts);
+  }, [predictionsQ.data, announcementsQ.data]);
   }, [predictionsQ.data, announcementsQ.data, isVip]);
 
   /* ---------- seen / unseen tracking ---------- */
