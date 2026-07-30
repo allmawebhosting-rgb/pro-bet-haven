@@ -555,20 +555,21 @@ function NextMatchCard({ p, isVip, onZero }: { p: Prediction; isVip: boolean; on
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="relative overflow-hidden rounded-3xl card-noir border border-gold/25 p-5 my-3"
+      className="relative overflow-hidden rounded-3xl card-noir border border-gold/20 px-5 py-6 my-4"
     >
       <div
-        className="absolute inset-0 pointer-events-none opacity-70"
+        className="absolute inset-0 pointer-events-none opacity-50"
         style={{
           background:
-            "radial-gradient(ellipse 70% 60% at 50% -10%, oklch(0.82 0.14 85 / 12%), transparent 65%)",
+            "radial-gradient(ellipse 70% 60% at 50% -20%, oklch(0.82 0.14 85 / 8%), transparent 70%)",
         }}
       />
       <div className="relative">
         <div className="flex items-center justify-center gap-2">
-          <CalendarClock className="h-3.5 w-3.5 text-gold" />
-          <span className="text-[10px] uppercase tracking-[0.3em] text-gold">Next match kicks off in</span>
+          <CalendarClock className="h-3 w-3 text-gold/70" />
+          <span className="text-[9px] uppercase tracking-[0.4em] text-gold/80">Next kick-off</span>
         </div>
+
 
         <div className="mt-4">
           <Countdown target={p.kickoff_at} onZero={onZero} />
