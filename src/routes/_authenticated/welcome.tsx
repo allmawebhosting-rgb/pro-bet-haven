@@ -36,10 +36,38 @@ function WelcomePage() {
   }, [channel]);
 
   useEffect(() => {
+    if (!q.isSuccess) return;
     if (q.data && "needsOnboarding" in q.data && q.data.needsOnboarding) {
-      navigate({ to: "/onboarding" });
+      navigate({ to: "/onboarding", replace: true });
     }
-  }, [q.data, navigate]);
+  }, [q.isSuccess, q.data, navigate]);
+
+  if (q.isError) {
+    return (
+      <div className="min-h-screen grid place-items-center px-4">
+        <div className="glass-strong rounded-3xl p-8 max-w-md w-full text-center">
+          <div className="flex justify-center mb-6"><Logo /></div>
+          <h1 className="font-display text-3xl">We couldn't load your channel</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {q.error instanceof Error ? q.error.message : "Something went wrong."}
+          </p>
+          <button
+            onClick={() => q.refetch()}
+            className="mt-6 w-full rounded-full gold-bg px-6 py-3 text-sm font-semibold"
+          >
+            Try again
+          </button>
+          <button
+            onClick={() => navigate({ to: "/dashboard" })}
+            className="mt-3 w-full rounded-full glass px-6 py-3 text-sm font-semibold"
+          >
+            Go to dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
+
 
   return (
     <div className="min-h-screen relative overflow-hidden grid place-items-center px-4">
