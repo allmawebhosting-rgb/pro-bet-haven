@@ -520,31 +520,27 @@ function MessageShell({ children, channelLetter, tone = "default" }: {
 
 function MessageMeta({ views, time, pinned }: { views: string; time: Date; pinned?: boolean }) {
   return (
-    <div className="mt-2 flex items-center justify-end gap-1.5 text-[10px] text-muted-foreground">
-      {pinned && <Pin className="h-3 w-3 text-gold rotate-45" />}
-      <Eye className="h-3 w-3" />
-      <span>{views}</span>
-      <span className="ml-1">{time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+    <div className="mt-3 flex items-center justify-end gap-1.5 text-[10px] text-muted-foreground/70">
+      {pinned && <Pin className="h-3 w-3 text-gold/70 rotate-45" />}
+      <Eye className="h-3 w-3 opacity-60" />
+      <span className="tabular-nums">{views}</span>
+      <span className="ml-1 tabular-nums">{time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
     </div>
   );
 }
 
 function NewBadge() {
-  return (
-    <span className="rounded-md bg-gold/15 border border-gold/40 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest text-gold">
-      New
-    </span>
-  );
+  return <span className="h-1.5 w-1.5 rounded-full bg-gold shadow-[0_0_8px_var(--gold)]" aria-label="New" />;
 }
 
 function UnreadDivider({ count }: { count: number }) {
   return (
-    <div className="relative flex items-center gap-3 py-4">
-      <span className="h-px flex-1 bg-gradient-to-r from-transparent to-gold/50" />
-      <span className="rounded-full border border-gold/40 bg-gold/10 px-3 py-1 text-[10px] uppercase tracking-[0.25em] text-gold whitespace-nowrap">
-        {count} unread {count === 1 ? "message" : "messages"}
+    <div className="relative flex items-center gap-4 py-5">
+      <span className="h-px flex-1 bg-gradient-to-r from-transparent to-gold/25" />
+      <span className="text-[9px] uppercase tracking-[0.35em] text-gold/70 whitespace-nowrap">
+        {count} unread
       </span>
-      <span className="h-px flex-1 bg-gradient-to-l from-transparent to-gold/50" />
+      <span className="h-px flex-1 bg-gradient-to-l from-transparent to-gold/25" />
     </div>
   );
 }
