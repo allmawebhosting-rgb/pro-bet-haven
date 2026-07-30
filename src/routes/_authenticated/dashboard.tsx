@@ -1,18 +1,19 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   BadgeCheck, Bell, LogOut, Lock, Crown, Eye, Pin, Trophy,
-  Settings2, Timer, Flame, Volume2, ChevronDown,
+  Settings2, Timer, Flame, Volume2, ChevronDown, ArrowDown, CalendarClock,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Countdown } from "@/components/Countdown";
 import { toast } from "sonner";
 import { getOrCreateMyProfile } from "@/lib/profile.functions";
-import { amIAdmin, markTourCompleted } from "@/lib/channel.functions";
+import { amIAdmin, markTourCompleted, updateLastSeen } from "@/lib/channel.functions";
 import { AdminComposer } from "@/components/channel/AdminComposer";
+
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -30,7 +31,9 @@ type Profile = {
   status: "active" | "disabled"; created_at: string;
   is_vip: boolean; free_picks_claimed: number;
   tour_completed?: boolean;
+  last_seen_at?: string | null;
 };
+
 type Prediction = {
   id: string; channel: "A" | "B"; match_name: string; league: string;
   home_team: string; away_team: string; kickoff_at: string; prediction: string;
@@ -150,7 +153,65 @@ function Dashboard() {
     return [...picks, ...anns, ...locked].sort((a, b) => a.ts - b.ts);
   }, [predictionsQ.data, announcementsQ.data, isVip]);
 
+  /* ---------- seen / unseen tracking ---------- */
+  const pushSeen = useServerFn(updateLastSeen);
+  const [baseline, setBaseline] = useState<number | null>(null);
+  const persistedRef = useRef<number>(0);
+  const unreadAnchorRef = useRef<HTMLDivElement | null>(null);
+  const [atBottom, setAtBottom] = useState(true);
+
+  useEffect(() => {
+    if (!profile || baseline !== null) return;
+    const raw = profile.last_seen_at ?? profile.created_at;
+    const ts = new Date(raw).getTime();
+    setBaseline(Number.isFinite(ts) ? ts : 0);
+    persistedRef.current = Number.isFinite(ts) ? ts : 0;
+  }, [profile, baseline]);
+
+  const newestTs = feed.length ? feed[feed.length - 1].ts : 0;
+  const unreadCount = baseline === null ? 0 : feed.filter((i) => i.ts > baseline).length;
+  const firstUnreadTs = baseline === null ? null : feed.find((i) => i.ts > baseline)?.ts ?? null;
+
+  const markSeen = useCallback(() => {
+    if (!newestTs || newestTs <= persistedRef.current) return;
+    persistedRef.current = newestTs;
+    pushSeen({ data: { seen_at: new Date(newestTs).toISOString() } }).catch(() => {});
+  }, [newestTs, pushSeen]);
+
+  useEffect(() => {
+    const onScroll = () => {
+      const near =
+        window.innerHeight + window.scrollY >= document.body.scrollHeight - 160;
+      setAtBottom(near);
+      if (near) markSeen();
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [markSeen]);
+
+  // Resume: jump to the first unread message once, after the feed renders.
+  const resumedRef = useRef(false);
+  useEffect(() => {
+    if (resumedRef.current || baseline === null || firstUnreadTs === null) return;
+    const el = unreadAnchorRef.current;
+    if (!el) return;
+    resumedRef.current = true;
+    requestAnimationFrame(() => el.scrollIntoView({ behavior: "smooth", block: "start" }));
+  }, [baseline, firstUnreadTs, feed.length]);
+
+
+
+  /* ---------- next match countdown ---------- */
+  const nextMatch = useMemo(() => {
+    const now = Date.now();
+    return (predictionsQ.data ?? [])
+      .filter((p) => p.published && new Date(p.kickoff_at).getTime() > now)
+      .sort((a, b) => new Date(a.kickoff_at).getTime() - new Date(b.kickoff_at).getTime())[0];
+  }, [predictionsQ.data]);
+
   if (profileQ.isLoading) return <FeedSkeleton />;
+
   if (profileQ.isError || !profile) {
     return (
       <div className="min-h-screen grid place-items-center px-4">
@@ -276,6 +337,9 @@ function Dashboard() {
           {!isVip && <> You have <b className="text-gold">{freeRemaining} free {freeRemaining === 1 ? "pick" : "picks"}</b> remaining.</>}
         </SystemMessage>
 
+        {/* Next match countdown — premium hero card */}
+        {nextMatch && <NextMatchCard p={nextMatch} isVip={isVip} onZero={() => predictionsQ.refetch()} />}
+
         {feed.length === 0 && (
           <div className="py-16 text-center">
             <Volume2 className="h-8 w-8 text-muted-foreground/40 mx-auto" />
@@ -286,15 +350,25 @@ function Dashboard() {
         {feed.map((item, idx) => {
           const prev = feed[idx - 1];
           const showDate = !prev || !sameDay(new Date(prev.ts), new Date(item.ts));
+          const isFirstUnread = firstUnreadTs !== null && item.ts === firstUnreadTs;
+          const unseen = baseline !== null && item.ts > baseline;
           return (
             <div key={item.kind === "pick" ? item.pick.id : item.kind === "announcement" ? item.announcement.id : `l${item.i}`}>
               {showDate && <DateChip d={new Date(item.ts)} />}
-              {item.kind === "pick" && <PickBubble p={item.pick} channelLetter={profile.channel} />}
-              {item.kind === "announcement" && <AnnouncementBubble a={item.announcement} channelLetter={profile.channel} />}
-              {item.kind === "locked" && <LockedBubble idx={item.i} channelLetter={profile.channel} />}
+              {isFirstUnread && (
+                <div ref={unreadAnchorRef} className="scroll-mt-32">
+                  <UnreadDivider count={unreadCount} />
+                </div>
+              )}
+              <div className={unseen ? "relative rounded-2xl -mx-1 px-1 py-0.5 bg-gold/[0.04]" : undefined}>
+                {item.kind === "pick" && <PickBubble p={item.pick} channelLetter={profile.channel} unseen={unseen} />}
+                {item.kind === "announcement" && <AnnouncementBubble a={item.announcement} channelLetter={profile.channel} unseen={unseen} />}
+                {item.kind === "locked" && <LockedBubble idx={item.i} channelLetter={profile.channel} />}
+              </div>
             </div>
           );
         })}
+
 
         {/* VIP CTA as a channel post */}
         {!isVip && (
@@ -321,6 +395,28 @@ function Dashboard() {
           </div>
         )}
       </main>
+
+      {/* Jump to unread / latest */}
+      <AnimatePresence>
+        {unreadCount > 0 && !atBottom && (
+          <motion.button
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 12 }}
+            onClick={() => {
+              const el = unreadAnchorRef.current;
+              if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+              else window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+            }}
+            className="fixed bottom-24 right-4 z-40 inline-flex items-center gap-2 rounded-full gold-bg px-4 py-2.5 text-xs font-semibold shadow-[0_10px_40px_-10px_var(--gold)]"
+          >
+            <ArrowDown className="h-3.5 w-3.5" />
+            {unreadCount} unread
+          </motion.button>
+        )}
+      </AnimatePresence>
+
+
 
       {/* Admin inline composer */}
       {isAdmin && <AdminComposer currentChannel={profile.channel} />}
@@ -434,16 +530,82 @@ function MessageMeta({ views, time, pinned }: { views: string; time: Date; pinne
   );
 }
 
-function PickBubble({ p, channelLetter }: { p: Prediction; channelLetter: "A" | "B" }) {
+function NewBadge() {
+  return (
+    <span className="rounded-md bg-gold/15 border border-gold/40 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest text-gold">
+      New
+    </span>
+  );
+}
+
+function UnreadDivider({ count }: { count: number }) {
+  return (
+    <div className="relative flex items-center gap-3 py-4">
+      <span className="h-px flex-1 bg-gradient-to-r from-transparent to-gold/50" />
+      <span className="rounded-full border border-gold/40 bg-gold/10 px-3 py-1 text-[10px] uppercase tracking-[0.25em] text-gold whitespace-nowrap">
+        {count} unread {count === 1 ? "message" : "messages"}
+      </span>
+      <span className="h-px flex-1 bg-gradient-to-l from-transparent to-gold/50" />
+    </div>
+  );
+}
+
+function NextMatchCard({ p, isVip, onZero }: { p: Prediction; isVip: boolean; onZero: () => void }) {
+  const locked = !isVip && p.tier === "vip";
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="relative overflow-hidden rounded-3xl card-noir border border-gold/25 p-5 my-3"
+    >
+      <div
+        className="absolute inset-0 pointer-events-none opacity-70"
+        style={{
+          background:
+            "radial-gradient(ellipse 70% 60% at 50% -10%, oklch(0.82 0.14 85 / 12%), transparent 65%)",
+        }}
+      />
+      <div className="relative">
+        <div className="flex items-center justify-center gap-2">
+          <CalendarClock className="h-3.5 w-3.5 text-gold" />
+          <span className="text-[10px] uppercase tracking-[0.3em] text-gold">Next match kicks off in</span>
+        </div>
+
+        <div className="mt-4">
+          <Countdown target={p.kickoff_at} onZero={onZero} />
+        </div>
+
+        <div className="mt-5 text-center">
+          <div className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">{p.league}</div>
+          <div className={`mt-1 font-display text-2xl leading-tight ${locked ? "blur-[6px] select-none" : ""}`}>
+            {locked ? "██████ vs ██████" : <>{p.home_team} <span className="text-muted-foreground text-lg">vs</span> {p.away_team}</>}
+          </div>
+          <div className="mt-1 text-[11px] text-muted-foreground">
+            {new Date(p.kickoff_at).toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+          </div>
+          {locked && (
+            <a href="#upgrade" className="mt-4 inline-flex items-center gap-1.5 rounded-full gold-bg px-4 py-2 text-[11px] font-semibold">
+              <Crown className="h-3 w-3" /> Unlock this match
+            </a>
+          )}
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+function PickBubble({ p, channelLetter, unseen }: { p: Prediction; channelLetter: "A" | "B"; unseen?: boolean }) {
   const isGuaranteed = p.confidence >= 5;
   return (
     <MessageShell channelLetter={channelLetter} tone="fixed">
       <div className="flex items-center gap-1.5 flex-wrap">
         <span className="rounded-md gold-bg px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest">🔒 Fixed</span>
         <span className="text-[10px] uppercase tracking-widest text-muted-foreground">{p.league}</span>
+        {unseen && <NewBadge />}
         {p.tier === "free" && <span className="rounded-md glass px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest text-gold">Free</span>}
         {isGuaranteed && <span className="rounded-md glass px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest text-gold inline-flex items-center gap-0.5"><Flame className="h-2.5 w-2.5" />Lock</span>}
       </div>
+
       <div className="mt-2 font-display text-xl sm:text-2xl leading-tight">
         {p.home_team} <span className="text-muted-foreground text-base">vs</span> {p.away_team}
       </div>
@@ -469,13 +631,15 @@ function PickBubble({ p, channelLetter }: { p: Prediction; channelLetter: "A" | 
   );
 }
 
-function AnnouncementBubble({ a, channelLetter }: { a: Announcement; channelLetter: "A" | "B" }) {
+function AnnouncementBubble({ a, channelLetter, unseen }: { a: Announcement; channelLetter: "A" | "B"; unseen?: boolean }) {
   return (
     <MessageShell channelLetter={channelLetter} tone="broadcast">
       <div className="flex items-center gap-1.5">
         <Bell className="h-3.5 w-3.5 text-gold" />
         <span className="text-[10px] uppercase tracking-widest text-gold font-semibold">Broadcast</span>
+        {unseen && <NewBadge />}
       </div>
+
       <h3 className="mt-1 font-display text-lg leading-tight">{a.title}</h3>
       <p className="mt-1 text-sm text-foreground/85 whitespace-pre-wrap">{a.body}</p>
       <MessageMeta views={randViews(a.id)} time={new Date(a.created_at)} />
