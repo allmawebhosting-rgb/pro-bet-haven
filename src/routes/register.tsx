@@ -5,6 +5,9 @@ import { z } from "zod";
 import { ArrowLeft, ArrowRight, Check, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { waitForSession } from "@/lib/auth-session";
+import { useServerFn } from "@tanstack/react-start";
+import { useQueryClient } from "@tanstack/react-query";
+import { completeOnboarding } from "@/lib/profile.functions";
 
 import { lovable } from "@/integrations/lovable";
 import { Logo } from "@/components/Logo";
