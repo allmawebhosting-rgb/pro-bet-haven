@@ -48,6 +48,7 @@ function RegisterPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const saveProfile = useServerFn(completeOnboarding);
+  const hydrated = useHydrated();
   const [step, setStep] = useState(0);
   const [dir, setDir] = useState(1);
   const [loading, setLoading] = useState(false);
