@@ -1,14 +1,21 @@
 import { createFileRoute, Link, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { waitForSession } from "@/lib/auth-session";
 
 import { lovable } from "@/integrations/lovable";
+import { useHydrated } from "@/hooks/use-hydrated";
 import { Logo } from "@/components/Logo";
 import { toast } from "sonner";
 
+const authSearchSchema = z.object({
+  reason: z.enum(["expired"]).optional(),
+});
+
 export const Route = createFileRoute("/auth")({
+  validateSearch: authSearchSchema,
   head: () => ({
     meta: [
       { title: "Sign in — Aurum" },
@@ -32,13 +39,22 @@ function derivePassword(w: string) {
 function AuthPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { reason } = Route.useSearch();
+  const hydrated = useHydrated();
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [whatsapp, setWhatsapp] = useState("");
 
+  useEffect(() => {
+    if (reason === "expired") {
+      toast.info("Your session expired. Please sign in again.");
+    }
+  }, [reason]);
+
   if (location.pathname === "/auth/callback") {
     return <Outlet />;
   }
+
 
   async function handleGoogle() {
     setGoogleLoading(true);
@@ -67,12 +83,14 @@ function AuthPage() {
     }
     setLoading(true);
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email: whatsappToEmail(whatsapp),
         password: derivePassword(whatsapp),
       });
       if (error) throw error;
-      const session = data.session ?? (await waitForSession());
+      // Don't navigate until the session is actually readable from storage —
+      // the protected-route guard reads it immediately on arrival.
+      const session = await waitForSession();
       if (!session) throw new Error("Sign-in did not complete. Please try again.");
       await navigate({ to: "/dashboard", replace: true });
     } catch (err) {
@@ -128,7 +146,7 @@ function AuthPage() {
             </div>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !hydrated}
               className="w-full rounded-full gold-bg px-6 py-4 text-sm font-semibold shadow-[0_0_30px_oklch(0.82_0.14_85/40%)] disabled:opacity-60"
             >
               {loading ? "Signing in…" : "Sign in"}

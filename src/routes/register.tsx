@@ -10,6 +10,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { completeOnboarding } from "@/lib/profile.functions";
 
 import { lovable } from "@/integrations/lovable";
+import { useHydrated } from "@/hooks/use-hydrated";
 import { Logo } from "@/components/Logo";
 import { toast } from "sonner";
 
@@ -260,7 +261,8 @@ function RegisterPage() {
               <button
                 type="button"
                 onClick={next}
-                className="flex-1 rounded-full gold-bg px-6 py-3 text-sm font-semibold inline-flex items-center justify-center gap-2 shadow-[0_0_30px_oklch(0.82_0.14_85/40%)]"
+                disabled={!hydrated}
+                className="flex-1 rounded-full gold-bg px-6 py-3 text-sm font-semibold inline-flex items-center justify-center gap-2 shadow-[0_0_30px_oklch(0.82_0.14_85/40%)] disabled:opacity-60"
               >
                 Continue <ArrowRight className="h-4 w-4" />
               </button>
@@ -268,7 +270,7 @@ function RegisterPage() {
               <button
                 type="button"
                 onClick={submit}
-                disabled={loading}
+                disabled={loading || !hydrated}
                 className="flex-1 rounded-full gold-bg px-6 py-3 text-sm font-semibold inline-flex items-center justify-center gap-2 shadow-[0_0_30px_oklch(0.82_0.14_85/40%)] disabled:opacity-60"
               >
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
