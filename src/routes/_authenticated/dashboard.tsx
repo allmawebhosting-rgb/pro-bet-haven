@@ -217,7 +217,7 @@ function Dashboard() {
       </div>
     );
   }
-  if (profileQ.data && "needsOnboarding" in profileQ.data && profileQ.data.needsOnboarding) return <FeedSkeleton />;
+  
   if (profile.status === "disabled") {
     return (
       <div className="min-h-screen grid place-items-center px-4">
