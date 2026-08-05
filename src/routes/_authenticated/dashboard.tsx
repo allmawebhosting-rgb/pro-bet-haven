@@ -73,11 +73,8 @@ function Dashboard() {
     staleTime: 60_000,
   });
 
-  useEffect(() => {
-    if (profileQ.data && "needsOnboarding" in profileQ.data && profileQ.data.needsOnboarding) {
-      navigate({ to: "/onboarding" });
-    }
-  }, [profileQ.data, navigate]);
+
+
 
   const profile: Profile | undefined =
     profileQ.data && "profile" in profileQ.data ? (profileQ.data.profile as Profile) : undefined;
@@ -220,7 +217,7 @@ function Dashboard() {
       </div>
     );
   }
-  if (profileQ.data && "needsOnboarding" in profileQ.data && profileQ.data.needsOnboarding) return <FeedSkeleton />;
+  
   if (profile.status === "disabled") {
     return (
       <div className="min-h-screen grid place-items-center px-4">

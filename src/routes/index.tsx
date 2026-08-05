@@ -148,7 +148,7 @@ function Landing() {
           </div>
           <div className="mt-14 grid gap-6 md:grid-cols-3">
             {[
-              { n: "01", icon: ShieldCheck, title: "Register in 30 seconds", desc: "Name + WhatsApp — that's it. You're placed in a private VIP channel instantly." },
+              { n: "01", icon: ShieldCheck, title: "Join in one tap", desc: "Continue with Google — that's it. You're placed in a private VIP channel instantly." },
               { n: "02", icon: Trophy, title: "Unlock 2 free fixed matches", desc: "See two full fixed match slips — teams, prediction, odds, kickoff — no stake, no card." },
               { n: "03", icon: Flame, title: "Go VIP for daily wins", desc: "Upgrade for daily fixed matches on tap, delivered the moment they drop." },
             ].map((f, i) => (
@@ -258,7 +258,7 @@ function Landing() {
           <h2 className="mt-3 font-display text-4xl sm:text-5xl text-center">Everything you need to know.</h2>
           <div className="mt-12 divide-y divide-border/60 glass rounded-2xl overflow-hidden">
             {[
-              { q: "Are the free picks really free?", a: "Yes. No card, no deposit, no stake. Just sign up with your name and WhatsApp and both fixed picks appear in your private channel." },
+              { q: "Are the free picks really free?", a: "Yes. No card, no deposit, no stake. Just continue with Google and both fixed picks appear in your private channel." },
               { q: "How are matches 'fixed'?", a: "Our sources come from inside the leagues — clubs, staff, officials. Every slip is verified before it drops to members. Play responsibly." },
               { q: "What happens after the 2 free picks?", a: "Additional slips are VIP-only. Upgrade any time from your dashboard to get every daily fixed match." },
               { q: "How fast are picks delivered?", a: "Instantly to your dashboard with WhatsApp alerts, usually 2–24 hours before kickoff." },
