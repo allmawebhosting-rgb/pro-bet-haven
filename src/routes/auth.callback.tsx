@@ -21,13 +21,13 @@ function AuthCallback() {
     let timer: ReturnType<typeof setTimeout> | undefined;
 
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!cancelled && session) navigate({ to: "/welcome" });
+      if (!cancelled && session) navigate({ to: "/dashboard" });
     });
 
     supabase.auth.getSession().then(({ data }) => {
       if (cancelled) return;
       if (data.session) {
-        navigate({ to: "/welcome" });
+        navigate({ to: "/dashboard" });
         return;
       }
       timer = setTimeout(() => {
