@@ -148,7 +148,7 @@ function Landing() {
           </div>
           <div className="mt-14 grid gap-6 md:grid-cols-3">
             {[
-              { n: "01", icon: ShieldCheck, title: "Register in 30 seconds", desc: "Name + WhatsApp — that's it. You're placed in a private VIP channel instantly." },
+              { n: "01", icon: ShieldCheck, title: "Join in one tap", desc: "Continue with Google — that's it. You're placed in a private VIP channel instantly." },
               { n: "02", icon: Trophy, title: "Unlock 2 free fixed matches", desc: "See two full fixed match slips — teams, prediction, odds, kickoff — no stake, no card." },
               { n: "03", icon: Flame, title: "Go VIP for daily wins", desc: "Upgrade for daily fixed matches on tap, delivered the moment they drop." },
             ].map((f, i) => (
