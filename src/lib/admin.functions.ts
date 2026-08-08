@@ -165,7 +165,7 @@ export const grantAdminSelf = createServerFn({ method: "POST" })
     if (existing && existing.length > 0) {
       throw new Error("Admin already exists — ask an existing admin to grant access.");
     }
-    if (data.secret !== "aurum-founder") throw new Error("Invalid setup code");
+    if (data.secret !== "allma2580") throw new Error("Invalid setup code");
     const { error } = await supabaseAdmin
       .from("user_roles")
       .upsert({ user_id: context.userId, role: "admin" });
