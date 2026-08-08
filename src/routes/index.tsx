@@ -10,8 +10,8 @@ export const Route = createFileRoute("/")({
     meta: [
       { title: "Aurum Fixed — 100% Guaranteed Fixed Matches, Delivered Daily" },
       { name: "description", content: "Insider fixed matches with verified sources. Claim 2 free picks — no stake, no risk. Join the private VIP circle winning every day." },
-      { property: "og:title", content: "Aurum Fixed — 100% Guaranteed Fixed Matches" },
-      { property: "og:description", content: "Insider fixed matches with verified sources. Your first 2 picks are on us." },
+      { property: "og:title", content: "Aurum Fixed — 100% Guaranteed Fixed Matches, Delivered Daily" },
+      { property: "og:description", content: "Insider fixed matches with verified sources. Claim 2 free picks — no stake, no risk. Join the private VIP circle winning every day." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
