@@ -11,6 +11,7 @@ The first-admin bootstrap currently accepts the code `aurum-founder`. Change it 
 
 - `src/lib/admin.functions.ts` — in `grantAdminSelf`, compare the submitted secret against `allma2580`.
 - `src/routes/_authenticated/admin.tsx` — update the displayed default code text.
+- Also fix an existing type error in the same file: in `upsertPredictionAdmin`, the prediction update passes a possibly-undefined `id` to `.eq("id", id)`; narrow it to `data.id`.
 
 ## Notes
 
