@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 function fmt(n: number) {
   return n.toString().padStart(2, "0");
@@ -7,6 +7,7 @@ function fmt(n: number) {
 export function Countdown({ target, onZero, compact }: { target: string | Date; onZero?: () => void; compact?: boolean }) {
   const targetTs = new Date(target).getTime();
   const [now, setNow] = useState(() => Date.now());
+  const firedRef = useRef(false);
 
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
@@ -20,7 +21,11 @@ export function Countdown({ target, onZero, compact }: { target: string | Date; 
   const secs = Math.floor((diff / 1000) % 60);
 
   useEffect(() => {
-    if (diff === 0) onZero?.();
+    if (diff === 0 && !firedRef.current) {
+      firedRef.current = true;
+      onZero?.();
+    }
+    if (diff > 0) firedRef.current = false;
   }, [diff, onZero]);
 
   const parts = [
@@ -39,16 +44,16 @@ export function Countdown({ target, onZero, compact }: { target: string | Date; 
   }
 
   return (
-    <div className="grid grid-cols-4 gap-2 sm:gap-4">
+    <div className="countdown-grid grid grid-cols-4 gap-2 sm:gap-3">
       {parts.map((p) => (
         <div
           key={p.label}
-          className="glass-strong rounded-2xl px-2 py-4 sm:px-4 sm:py-6 text-center"
+          className={`countdown-unit glass-strong rounded-2xl px-2 py-3.5 sm:px-4 sm:py-5 text-center ${p.label === "Seconds" ? "countdown-unit-live" : ""}`}
         >
-          <div className="font-display text-3xl sm:text-5xl gold-text tabular-nums leading-none">
+          <div className="countdown-number font-display text-3xl sm:text-5xl gold-text tabular-nums leading-none">
             {fmt(p.value)}
           </div>
-          <div className="mt-2 text-[10px] sm:text-xs uppercase tracking-[0.2em] text-muted-foreground">
+          <div className="mt-2 text-[9px] sm:text-[10px] uppercase tracking-[0.22em] text-muted-foreground/90">
             {p.label}
           </div>
         </div>

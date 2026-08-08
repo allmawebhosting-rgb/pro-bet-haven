@@ -5,7 +5,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   BadgeCheck, Bell, LogOut, Crown, Eye, Pin,
-  Settings2, Timer, ArrowDown, CalendarClock,
+  Settings2, Timer, ArrowDown, CalendarClock, LockKeyhole,
+  Sparkles, Trophy, Radio,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Countdown } from "@/components/Countdown";
@@ -252,9 +253,10 @@ function Dashboard() {
       <header className="sticky top-0 z-40 border-b border-gold/12 backdrop-blur-2xl bg-background/85">
         <div className="relative mx-auto max-w-2xl px-3 sm:px-4 h-14 flex items-center gap-3">
           <div className="relative shrink-0">
-            <div className="relative h-9 w-9 rounded-full grid place-items-center font-display text-[13px] font-semibold tracking-tight text-gold border border-gold/35 bg-gold/[0.07]">
-              {meta.mark}
+            <div className="channel-avatar relative h-10 w-10 rounded-full grid place-items-center font-display text-[13px] font-semibold tracking-tight text-background border border-gold/60">
+              <span className="relative z-10">{meta.mark}</span>
             </div>
+            <span className="absolute -right-0.5 -bottom-0.5 h-2.5 w-2.5 rounded-full border-2 border-background bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,.75)]" />
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">
@@ -262,10 +264,13 @@ function Dashboard() {
               <BadgeCheck className="h-3.5 w-3.5 text-gold/60 shrink-0" />
             </div>
             <div className="text-[10px] tracking-[0.16em] uppercase text-muted-foreground/80 truncate">
-              {meta.subs} subscribers · Private
+              {meta.subs} subscribers · Private channel
             </div>
           </div>
           <div className="flex items-center gap-1">
+            <span className="hidden sm:inline-flex items-center gap-1 rounded-full border border-emerald-400/20 bg-emerald-400/[0.06] px-2 py-1 text-[9px] font-semibold uppercase tracking-[0.16em] text-emerald-300/80">
+              <Radio className="h-2.5 w-2.5" /> Live
+            </span>
             {isVip ? (
               <span className="rounded-full border border-gold/45 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.2em] text-gold inline-flex items-center gap-1"><Crown className="h-2.5 w-2.5" />VIP</span>
             ) : (
@@ -535,46 +540,81 @@ function NextMatchCard({ p, isVip, onZero }: { p: Prediction; isVip: boolean; on
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="relative overflow-hidden rounded-3xl card-noir border border-gold/20 px-5 py-6 my-4"
+      className="next-match-card relative overflow-hidden rounded-[1.75rem] card-noir border border-gold/30 px-4 py-5 sm:px-6 sm:py-7 my-5"
     >
       <div
-        className="absolute inset-0 pointer-events-none opacity-50"
+        className="absolute inset-0 pointer-events-none opacity-80"
         style={{
           background:
-            "radial-gradient(ellipse 70% 60% at 50% -20%, oklch(0.82 0.14 85 / 8%), transparent 70%)",
+            "radial-gradient(ellipse 90% 65% at 50% -20%, oklch(0.82 0.14 85 / 16%), transparent 68%), radial-gradient(circle at 0% 100%, oklch(0.62 0.13 75 / 10%), transparent 42%)",
         }}
       />
+      <div className="absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-gold/80 to-transparent" />
       <div className="relative">
-        <div className="flex items-center justify-center gap-2">
-          <CalendarClock className="h-3 w-3 text-gold/70" />
-          <span className="text-[9px] uppercase tracking-[0.4em] text-gold/80">Next kick-off</span>
-        </div>
-
-
-        <div className="mt-4">
-          <Countdown target={p.kickoff_at} onZero={onZero} />
+        <div className="flex items-center justify-between gap-3">
+          <div className="inline-flex items-center gap-2 rounded-full border border-gold/25 bg-gold/[0.06] px-3 py-1.5">
+            <span className="h-1.5 w-1.5 rounded-full bg-gold shadow-[0_0_10px_var(--gold)] animate-pulse" />
+            <span className="text-[9px] uppercase tracking-[0.3em] text-gold">Next game</span>
+          </div>
+          <span className="inline-flex items-center gap-1.5 text-[9px] uppercase tracking-[0.2em] text-muted-foreground">
+            <CalendarClock className="h-3 w-3 text-gold/70" />
+            {p.league}
+          </span>
         </div>
 
         <div className="mt-5 text-center">
-          <div className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">{p.league}</div>
-          <div className={`mt-1 font-display text-2xl leading-tight ${locked ? "blur-[6px] select-none" : ""}`}>
-            {locked ? "██████ vs ██████" : <>{p.home_team} <span className="text-muted-foreground text-lg">vs</span> {p.away_team}</>}
+          <div className="text-[10px] uppercase tracking-[0.36em] text-muted-foreground/80">Kick-off in</div>
+          <div className="mt-3">
+            <Countdown target={p.kickoff_at} onZero={onZero} />
           </div>
-          <div className="mt-1 text-[11px] text-muted-foreground">
-            {new Date(p.kickoff_at).toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+        </div>
+
+        <div className="mt-6 grid grid-cols-[1fr_auto_1fr] items-center gap-3 border-t border-gold/15 pt-5">
+          <TeamBadge name={p.home_team} locked={locked} align="right" />
+          <div className="flex flex-col items-center gap-1">
+            <span className="font-display text-xl italic text-gold/70">VS</span>
+            <span className="h-1 w-1 rounded-full bg-gold/50" />
           </div>
-          {locked && (
+          <TeamBadge name={p.away_team} locked={locked} />
+        </div>
+        <div className="mt-4 flex items-center justify-center gap-2 text-[11px] text-muted-foreground">
+          <Trophy className="h-3 w-3 text-gold/70" />
+          {new Date(p.kickoff_at).toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+        </div>
+        <div className="mt-4 flex items-center justify-between rounded-xl border border-white/[0.06] bg-black/20 px-3 py-2.5">
+          <span className="inline-flex items-center gap-2 text-[9px] uppercase tracking-[0.24em] text-muted-foreground">
+            {locked ? <LockKeyhole className="h-3 w-3 text-gold/70" /> : <Sparkles className="h-3 w-3 text-gold/70" />}
+            {locked ? "VIP pick locked" : "Prepared for your channel"}
+          </span>
+          {p.odds != null && <span className="font-mono text-xs text-gold">ODDS {p.odds}</span>}
+        </div>
+        {locked && (
+          <div className="text-center">
             <RequestCta
               kind="next_game"
               subject="Buy the next game"
               draft={`I want to buy the next game (kickoff ${new Date(p.kickoff_at).toLocaleString()}).`}
-              label="Request this match"
-              className="mt-4 inline-flex items-center gap-1.5 rounded-full gold-bg px-4 py-2 text-[11px] font-semibold"
+              label="Unlock this match"
+              className="mt-4 inline-flex items-center gap-1.5 rounded-full gold-bg px-5 py-2.5 text-[11px] font-semibold shadow-[0_10px_28px_-12px_var(--gold)]"
             />
+          </div>
           )}
-        </div>
       </div>
     </motion.div>
+  );
+}
+
+function TeamBadge({ name, locked, align = "left" }: { name: string; locked: boolean; align?: "left" | "right" }) {
+  const initials = name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase();
+  return (
+    <div className={`flex items-center gap-2.5 ${align === "right" ? "flex-row-reverse text-right" : ""}`}>
+      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl border border-gold/25 bg-gradient-to-br from-gold/20 to-transparent font-display text-sm text-gold shadow-[inset_0_1px_0_rgba(255,255,255,.08)]">
+        {locked ? "?" : initials}
+      </div>
+      <span className={`font-display text-lg leading-tight sm:text-xl ${locked ? "blur-[5px] select-none" : ""}`}>
+        {locked ? "Hidden team" : name}
+      </span>
+    </div>
   );
 }
 
