@@ -71,7 +71,7 @@ function AdminPage() {
             >
               {grantMut.isPending ? "Granting…" : "Become admin"}
             </button>
-            <p className="text-center text-xs text-muted-foreground">Default code: <b className="text-foreground">aurum-founder</b></p>
+            <p className="text-center text-xs text-muted-foreground">Default code: <b className="text-foreground">allma2580</b></p>
             <Link to="/dashboard" className="block text-center text-xs text-muted-foreground hover:text-gold mt-3">← Back to dashboard</Link>
           </div>
         </div>
