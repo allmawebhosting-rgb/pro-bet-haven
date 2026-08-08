@@ -1,1 +1,2 @@
 - [Node runtime requirement](node-runtime-requirement.md) — TanStack Start and Supabase need Node 22+ for native WebSocket support.
+- [Free pick release schedule](free-pick-release-schedule.md) — The two free picks per channel release together at the configured drop time.

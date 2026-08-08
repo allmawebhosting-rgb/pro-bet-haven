@@ -62,6 +62,13 @@ export const postMatchPick = createServerFn({ method: "POST" })
 
     const targets: Array<"A" | "B"> = data.target === "all" ? ["A", "B"] : [data.target];
     const now = new Date().toISOString();
+    const { data: channelSettings } = await supabaseAdmin
+      .from("channel_settings")
+      .select("channel, next_release_at")
+      .in("channel", targets);
+    const releaseByChannel = new Map(
+      (channelSettings ?? []).map((setting) => [setting.channel as "A" | "B", setting.next_release_at]),
+    );
     const rows = targets.map((channel) => ({
       channel,
       match_name: `${data.home_team} vs ${data.away_team}`,
@@ -73,7 +80,8 @@ export const postMatchPick = createServerFn({ method: "POST" })
       odds: data.odds ?? null,
       confidence: data.confidence,
       published: true,
-      release_at: now,
+      // Free picks are a single scheduled drop, not separate releases.
+      release_at: data.tier === "free" ? (releaseByChannel.get(channel) ?? now) : now,
       tier: data.tier,
     }));
     const { error } = await supabaseAdmin.from("predictions").insert(rows);

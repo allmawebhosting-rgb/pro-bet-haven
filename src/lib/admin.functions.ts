@@ -62,12 +62,23 @@ export const upsertPredictionAdmin = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    let releaseAt = data.release_at;
+    if (data.tier === "free") {
+      const { data: channelSettings } = await supabaseAdmin
+        .from("channel_settings")
+        .select("next_release_at")
+        .eq("channel", data.channel)
+        .maybeSingle();
+      // Free picks always share the channel's configured drop time.
+      releaseAt = channelSettings?.next_release_at ?? data.release_at;
+    }
+    const payload = { ...data, release_at: releaseAt };
     if (data.id) {
-      const { id, ...patch } = data;
+      const { id, ...patch } = payload;
       const { error } = await supabaseAdmin.from("predictions").update(patch).eq("id", id);
       if (error) throw new Error(error.message);
     } else {
-      const { error } = await supabaseAdmin.from("predictions").insert(data);
+      const { error } = await supabaseAdmin.from("predictions").insert(payload);
       if (error) throw new Error(error.message);
     }
     return { ok: true };
@@ -114,6 +125,17 @@ export const updateChannelSettingsAdmin = createServerFn({ method: "POST" })
       })
       .eq("channel", data.channel);
     if (error) throw new Error(error.message);
+
+    // Keep all not-yet-released free picks in this channel synchronized to
+    // the new drop time, so a two-pick free bundle is delivered together.
+    const now = new Date().toISOString();
+    const { error: syncError } = await supabaseAdmin
+      .from("predictions")
+      .update({ release_at: data.next_release_at })
+      .eq("channel", data.channel)
+      .eq("tier", "free")
+      .gte("release_at", now);
+    if (syncError) throw new Error(syncError.message);
     return { ok: true };
   });
 

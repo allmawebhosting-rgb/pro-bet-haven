@@ -201,7 +201,11 @@ function Dashboard() {
   const nextMatch = useMemo(() => {
     const now = Date.now();
     return (predictionsQ.data ?? [])
-      .filter((p) => p.published && new Date(p.kickoff_at).getTime() > now)
+      .filter((p) =>
+        p.published &&
+        new Date(p.release_at).getTime() <= now &&
+        new Date(p.kickoff_at).getTime() > now,
+      )
       .sort((a, b) => new Date(a.kickoff_at).getTime() - new Date(b.kickoff_at).getTime())[0];
   }, [predictionsQ.data]);
 

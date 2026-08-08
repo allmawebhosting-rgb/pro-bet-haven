@@ -338,7 +338,20 @@ function PredictionsTab() {
                   <Field label="Odds"><input type="number" step="0.01" className={inputCls} value={form.odds} onChange={(e) => setForm({ ...form, odds: e.target.value })} /></Field>
                   <Field label="Confidence 1–5"><input type="number" min={1} max={5} className={inputCls} value={form.confidence} onChange={(e) => setForm({ ...form, confidence: Number(e.target.value) })} /></Field>
                 </div>
-                <Field label="Release at"><input type="datetime-local" className={inputCls} value={form.release_at} onChange={(e) => setForm({ ...form, release_at: e.target.value })} /></Field>
+                <Field label={form.tier === "free" ? "Release at (uses channel drop time)" : "Release at"}>
+                  <input
+                    type="datetime-local"
+                    className={inputCls}
+                    value={form.release_at}
+                    onChange={(e) => setForm({ ...form, release_at: e.target.value })}
+                    disabled={form.tier === "free"}
+                  />
+                </Field>
+                {form.tier === "free" && (
+                  <p className="-mt-1 text-[11px] leading-relaxed text-gold/75">
+                    Free picks are released together. Set the shared time in the Channels tab.
+                  </p>
+                )}
                 <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.published} onChange={(e) => setForm({ ...form, published: e.target.checked })} /> Published</label>
                 <div className="flex gap-2 pt-4">
                   <button onClick={submit} disabled={upsertMut.isPending} className="rounded-full gold-bg px-5 py-2.5 text-sm font-semibold flex-1">{form.id ? "Update" : "Create"}</button>
@@ -370,7 +383,7 @@ function ChannelsTab() {
     <div className="space-y-6">
       <div>
         <h2 className="font-display text-3xl">Channels</h2>
-        <p className="text-sm text-muted-foreground">Countdown and release cadence per channel.</p>
+        <p className="text-sm text-muted-foreground">Set the shared drop time for each channel. Free picks release together.</p>
       </div>
       <div className="grid gap-6 md:grid-cols-2">
         {(q.data ?? []).map((c: any) => (
@@ -390,7 +403,12 @@ function ChannelCard({ item, onSave }: { item: { channel: "A" | "B"; next_releas
         <Radio className="h-5 w-5 text-gold" />
       </div>
       <div className="mt-4 space-y-3">
-        <Field label="Next release"><input type="datetime-local" className={inputCls} value={next} onChange={(e) => setNext(e.target.value)} /></Field>
+        <Field label="Free picks release together at">
+          <input type="datetime-local" className={inputCls} value={next} onChange={(e) => setNext(e.target.value)} />
+        </Field>
+        <p className="text-[11px] leading-relaxed text-muted-foreground">
+          Every free pick assigned to Channel {item.channel} uses this exact release time, so the two free matches arrive as one drop.
+        </p>
         <Field label="Release interval (minutes)"><input type="number" className={inputCls} value={interval} onChange={(e) => setInterval(Number(e.target.value))} /></Field>
         <button
           onClick={() => onSave({ channel: item.channel, next_release_at: new Date(next).toISOString(), release_interval_minutes: interval })}
