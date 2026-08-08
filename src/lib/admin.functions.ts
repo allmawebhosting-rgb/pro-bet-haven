@@ -74,8 +74,8 @@ export const upsertPredictionAdmin = createServerFn({ method: "POST" })
     }
     const payload = { ...data, release_at: releaseAt };
     if (data.id) {
-      const { id, ...patch } = payload;
-      const { error } = await supabaseAdmin.from("predictions").update(patch).eq("id", id);
+      const { id: _id, ...patch } = payload;
+      const { error } = await supabaseAdmin.from("predictions").update(patch).eq("id", data.id);
       if (error) throw new Error(error.message);
     } else {
       const { error } = await supabaseAdmin.from("predictions").insert(payload);
