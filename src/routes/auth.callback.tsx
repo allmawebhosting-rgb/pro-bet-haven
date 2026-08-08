@@ -18,32 +18,50 @@ function AuthCallback() {
 
   useEffect(() => {
     let cancelled = false;
-    let timer: ReturnType<typeof setTimeout> | undefined;
+    let timer: ReturnType<typeof setTimeout>;
+
+    const redirectToAuth = (message: string) => {
+      if (cancelled) return;
+      setMsg(message);
+      timer = setTimeout(() => {
+        if (!cancelled) navigate({ to: "/auth" });
+      }, 1500);
+    };
 
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!cancelled && session) navigate({ to: "/dashboard" });
+      if (!cancelled && session) {
+        navigate({ to: "/dashboard" });
+      }
     });
 
-    supabase.auth.getSession().then(({ data }) => {
-      if (cancelled) return;
-      if (data.session) {
-        navigate({ to: "/dashboard" });
-        return;
-      }
-      timer = setTimeout(() => {
+    timer = setTimeout(() => {
+      redirectToAuth("Sign-in is taking too long. Please try again.");
+    }, 8000);
+
+    supabase.auth
+      .getSession()
+      .then(({ data, error }) => {
         if (cancelled) return;
-        setMsg("We couldn't complete sign-in. Redirecting you back…");
-        navigate({ to: "/auth" });
-      }, 8000);
-    });
+        if (error) {
+          redirectToAuth("We couldn't complete sign-in. Please try again.");
+          return;
+        }
+        if (data.session) {
+          navigate({ to: "/dashboard" });
+          return;
+        }
+        redirectToAuth("We couldn't complete sign-in. Please try again.");
+      })
+      .catch(() => {
+        redirectToAuth("We couldn't complete sign-in. Please try again.");
+      });
 
     return () => {
       cancelled = true;
       sub.subscription.unsubscribe();
-      if (timer) clearTimeout(timer);
+      clearTimeout(timer);
     };
   }, [navigate]);
-
 
   return (
     <div className="min-h-screen grid place-items-center px-4">

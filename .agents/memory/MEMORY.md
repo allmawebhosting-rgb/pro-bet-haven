@@ -1,0 +1,1 @@
+- [Node runtime requirement](node-runtime-requirement.md) — TanStack Start and Supabase need Node 22+ for native WebSocket support.
