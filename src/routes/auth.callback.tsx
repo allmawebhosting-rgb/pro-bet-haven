@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { waitForSession } from "@/lib/auth-session";
 
 export const Route = createFileRoute("/auth/callback")({
   head: () => ({
@@ -19,6 +20,7 @@ function AuthCallback() {
   useEffect(() => {
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout>;
+    let redirecting = false;
 
     const redirectToAuth = (message: string) => {
       if (cancelled) return;
@@ -28,10 +30,27 @@ function AuthCallback() {
       }, 1500);
     };
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!cancelled && session) {
-        navigate({ to: "/dashboard" });
+    const goToDashboard = async () => {
+      if (cancelled || redirecting) return;
+      redirecting = true;
+      setMsg("Opening your private channel…");
+
+      // The auth event can fire just before Supabase finishes persisting the
+      // session. Wait for the stored session before entering the guarded route.
+      const session = await waitForSession(6000);
+      if (cancelled) return;
+      if (session) {
+        clearTimeout(timer);
+        await navigate({ to: "/dashboard" });
+        return;
       }
+
+      redirecting = false;
+      redirectToAuth("We couldn't complete sign-in. Please try again.");
+    };
+
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) void goToDashboard();
     });
 
     timer = setTimeout(() => {
@@ -47,7 +66,7 @@ function AuthCallback() {
           return;
         }
         if (data.session) {
-          navigate({ to: "/dashboard" });
+          void goToDashboard();
           return;
         }
         redirectToAuth("We couldn't complete sign-in. Please try again.");
