@@ -74,8 +74,8 @@ export const upsertPredictionAdmin = createServerFn({ method: "POST" })
     }
     const payload = { ...data, release_at: releaseAt };
     if (data.id) {
-      const { id, ...patch } = payload;
-      const { error } = await supabaseAdmin.from("predictions").update(patch).eq("id", id);
+      const { id: _id, ...patch } = payload;
+      const { error } = await supabaseAdmin.from("predictions").update(patch).eq("id", data.id);
       if (error) throw new Error(error.message);
     } else {
       const { error } = await supabaseAdmin.from("predictions").insert(payload);
@@ -165,7 +165,7 @@ export const grantAdminSelf = createServerFn({ method: "POST" })
     if (existing && existing.length > 0) {
       throw new Error("Admin already exists — ask an existing admin to grant access.");
     }
-    if (data.secret !== "aurum-founder") throw new Error("Invalid setup code");
+    if (data.secret !== "allma2580") throw new Error("Invalid setup code");
     const { error } = await supabaseAdmin
       .from("user_roles")
       .upsert({ user_id: context.userId, role: "admin" });
