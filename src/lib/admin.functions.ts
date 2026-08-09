@@ -47,6 +47,7 @@ export const upsertPredictionAdmin = createServerFn({ method: "POST" })
   .inputValidator((d: {
     id?: string;
     channel: "A" | "B";
+    sport?: string;
     match_name: string;
     league: string;
     home_team: string;
