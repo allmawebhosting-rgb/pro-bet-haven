@@ -43,6 +43,7 @@ export const postAnnouncement = createServerFn({ method: "POST" })
 
 const matchSchema = z.object({
   target: z.enum(["A", "B", "all"]),
+  sport: z.enum(SPORTS).default("football"),
   league: z.string().trim().min(1).max(80),
   home_team: z.string().trim().min(1).max(80),
   away_team: z.string().trim().min(1).max(80),
