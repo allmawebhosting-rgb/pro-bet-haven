@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { SPORTS } from "@/lib/sports";
 
 async function assertAdmin(supabase: any, userId: string) {
   const { data } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" });
@@ -72,6 +73,7 @@ export const postMatchPick = createServerFn({ method: "POST" })
     );
     const rows = targets.map((channel) => ({
       channel,
+      sport: data.sport,
       match_name: `${data.home_team} vs ${data.away_team}`,
       league: data.league,
       home_team: data.home_team,
