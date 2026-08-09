@@ -15,6 +15,7 @@ import { getOrCreateMyProfile } from "@/lib/profile.functions";
 import { amIAdmin, markTourCompleted, updateLastSeen } from "@/lib/channel.functions";
 import { AdminComposer } from "@/components/channel/AdminComposer";
 import { RequestCenterProvider, useRequestCenter } from "@/components/requests/RequestCenter";
+import { SPORT_LABEL, sportLabel, type Sport } from "@/lib/sports";
 
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -37,7 +38,7 @@ type Profile = {
 };
 
 type Prediction = {
-  id: string; channel: "A" | "B"; match_name: string; league: string;
+  id: string; channel: "A" | "B"; sport?: Sport | string | null; match_name: string; league: string;
   home_team: string; away_team: string; kickoff_at: string; prediction: string;
   odds: number | null; confidence: number; published: boolean; release_at: string;
   tier: "free" | "vip";
@@ -111,6 +112,13 @@ function Dashboard() {
   });
 
   const isAdmin = !!adminQ.data?.admin;
+  const [sportFilter, setSportFilter] = useState<Sport | "all">("all");
+
+  const availableSports = useMemo(() => {
+    const set = new Set<string>();
+    for (const p of predictionsQ.data ?? []) set.add((p.sport ?? "football") as string);
+    return Array.from(set);
+  }, [predictionsQ.data]);
 
   useEffect(() => {
     if (!channel) return;
@@ -138,14 +146,16 @@ function Dashboard() {
   const feed = useMemo(() => {
     const now = Date.now();
     const picks = (predictionsQ.data ?? [])
-      .filter((p) => p.published && new Date(p.release_at).getTime() <= now)
+      // Admins preview everything — including VIP picks and scheduled drops.
+      .filter((p) => isAdmin || (p.published && new Date(p.release_at).getTime() <= now))
+      .filter((p) => sportFilter === "all" || (p.sport ?? "football") === sportFilter)
       .map((p) => ({ kind: "pick" as const, ts: new Date(p.release_at).getTime(), pick: p }));
     const anns = (announcementsQ.data ?? []).map((a) => ({
       kind: "announcement" as const, ts: new Date(a.created_at).getTime(), announcement: a,
     }));
     // ascending (oldest at top, newest at bottom — like Telegram)
     return [...picks, ...anns].sort((a, b) => a.ts - b.ts);
-  }, [predictionsQ.data, announcementsQ.data]);
+  }, [predictionsQ.data, announcementsQ.data, isAdmin, sportFilter]);
   
 
   /* ---------- seen / unseen tracking ---------- */
@@ -332,6 +342,22 @@ function Dashboard() {
         {/* Next match countdown — premium hero card */}
         {nextMatch && <NextMatchCard p={nextMatch} isVip={isVip} onZero={() => predictionsQ.refetch()} />}
 
+        {availableSports.length > 1 && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            {(["all", ...availableSports] as const).map((sp) => (
+              <button
+                key={sp}
+                onClick={() => setSportFilter(sp as Sport | "all")}
+                className={`px-2.5 py-1 rounded-full text-[10px] uppercase tracking-widest font-semibold transition ${
+                  sportFilter === sp ? "gold-bg text-primary-foreground" : "glass text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {sp === "all" ? "All sports" : SPORT_LABEL[sp as Sport] ?? sp}
+              </button>
+            ))}
+          </div>
+        )}
+
         {feed.length === 0 && (
           <div className="py-20 text-center">
             <div className="mx-auto h-px w-16 bg-gold/25" />
@@ -354,7 +380,7 @@ function Dashboard() {
                 </div>
               )}
               <div>
-                {item.kind === "pick" && <PickBubble p={item.pick} channelLetter={profile.channel} unseen={unseen} />}
+                {item.kind === "pick" && <PickBubble p={item.pick} channelLetter={profile.channel} unseen={unseen} isAdmin={isAdmin} />}
                 {item.kind === "announcement" && <AnnouncementBubble a={item.announcement} channelLetter={profile.channel} unseen={unseen} />}
               </div>
             </div>
@@ -567,7 +593,7 @@ function NextMatchCard({ p, isVip, onZero }: { p: Prediction; isVip: boolean; on
         </div>
 
         <div className="mt-5 text-center">
-          <div className="text-[10px] uppercase tracking-[0.36em] text-muted-foreground/80">Kick-off in</div>
+          <div className="text-[10px] uppercase tracking-[0.36em] text-muted-foreground/80">Starts in</div>
           <div className="mt-3">
             <Countdown target={p.kickoff_at} onZero={onZero} />
           </div>
@@ -622,16 +648,27 @@ function TeamBadge({ name, locked, align = "left" }: { name: string; locked: boo
   );
 }
 
-function PickBubble({ p, channelLetter, unseen }: { p: Prediction; channelLetter: "A" | "B"; unseen?: boolean }) {
+function PickBubble({ p, channelLetter, unseen, isAdmin }: { p: Prediction; channelLetter: "A" | "B"; unseen?: boolean; isAdmin?: boolean }) {
   const isGuaranteed = p.confidence >= 5;
+  const scheduled = new Date(p.release_at).getTime() > Date.now();
   return (
     <MessageShell channelLetter={channelLetter} tone="fixed">
       <div className="flex items-center gap-2 flex-wrap">
         <span className="text-[10px] uppercase tracking-[0.28em] text-gold">Fixed</span>
         <span className="h-1 w-1 rounded-full bg-gold/40" />
-        <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{p.league}</span>
+        <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{sportLabel(p.sport)} · {p.league}</span>
         {p.tier === "free" && (
           <span className="text-[10px] uppercase tracking-[0.2em] text-gold/80">· Free</span>
+        )}
+        {isAdmin && p.tier === "vip" && (
+          <span className="rounded-full border border-gold/40 px-1.5 py-0.5 text-[9px] uppercase tracking-[0.2em] text-gold">VIP only</span>
+        )}
+        {isAdmin && (scheduled || !p.published) && (
+          <span className="rounded-full border border-border px-1.5 py-0.5 text-[9px] uppercase tracking-[0.2em] text-muted-foreground">
+            {p.published
+              ? `Drops ${new Date(p.release_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}`
+              : "Hidden"}
+          </span>
         )}
         {unseen && <NewBadge />}
       </div>
@@ -640,7 +677,7 @@ function PickBubble({ p, channelLetter, unseen }: { p: Prediction; channelLetter
         {p.home_team} <span className="text-muted-foreground/70 text-base font-sans font-light">vs</span> {p.away_team}
       </div>
       <div className="mt-1 text-[11px] text-muted-foreground/80 flex items-center gap-1.5">
-        <Timer className="h-3 w-3 opacity-70" /> Kick-off {new Date(p.kickoff_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+        <Timer className="h-3 w-3 opacity-70" /> Starts {new Date(p.kickoff_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
       </div>
 
       <div className="mt-4 rounded-xl border border-gold/20 bg-background/50 px-4 py-3">

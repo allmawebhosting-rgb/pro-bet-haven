@@ -119,6 +119,7 @@ export type Database = {
           prediction: string
           published: boolean
           release_at: string
+          sport: string
           tier: Database["public"]["Enums"]["prediction_tier"]
         }
         Insert: {
@@ -135,6 +136,7 @@ export type Database = {
           prediction: string
           published?: boolean
           release_at?: string
+          sport?: string
           tier?: Database["public"]["Enums"]["prediction_tier"]
         }
         Update: {
@@ -151,6 +153,7 @@ export type Database = {
           prediction?: string
           published?: boolean
           release_at?: string
+          sport?: string
           tier?: Database["public"]["Enums"]["prediction_tier"]
         }
         Relationships: []

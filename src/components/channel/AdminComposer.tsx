@@ -5,6 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Plus, Send, Pin, Trophy, X, ArrowLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { postAnnouncement, postMatchPick } from "@/lib/channel.functions";
+import { SPORTS, SPORT_LABEL, participantLabels, type Sport } from "@/lib/sports";
 
 type Target = "A" | "B" | "all";
 
@@ -21,6 +22,7 @@ export function AdminComposer({ currentChannel }: { currentChannel: "A" | "B" })
   const [loading, setLoading] = useState(false);
 
   const [match, setMatch] = useState({
+    sport: "football" as Sport,
     league: "",
     home_team: "",
     away_team: "",
@@ -55,6 +57,7 @@ export function AdminComposer({ currentChannel }: { currentChannel: "A" | "B" })
       await sendMatch({
         data: {
           target,
+          sport: match.sport,
           league: match.league.trim(),
           home_team: match.home_team.trim(),
           away_team: match.away_team.trim(),
@@ -66,6 +69,7 @@ export function AdminComposer({ currentChannel }: { currentChannel: "A" | "B" })
         },
       });
       setMatch({
+        sport: match.sport,
         league: "",
         home_team: "",
         away_team: "",
@@ -77,7 +81,12 @@ export function AdminComposer({ currentChannel }: { currentChannel: "A" | "B" })
       });
       setMode("text");
       await qc.invalidateQueries({ queryKey: ["predictions"] });
-      toast.success("Fixed pick posted");
+      const where = target === "all" ? "both channels" : `Channel ${target}`;
+      toast.success(
+        match.tier === "vip"
+          ? `Posted to ${where} — visible to VIP members only`
+          : `Posted to ${where} — drops at the channel's scheduled time`,
+      );
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to post");
     } finally {
@@ -220,9 +229,18 @@ export function AdminComposer({ currentChannel }: { currentChannel: "A" | "B" })
                   </button>
                 </div>
 
+                <select
+                  className="w-full rounded-xl bg-surface-2/50 border border-border px-3 py-2 text-sm outline-none focus:border-gold"
+                  value={match.sport}
+                  onChange={(e) => setMatch({ ...match, sport: e.target.value as Sport })}
+                >
+                  {SPORTS.map((s) => (
+                    <option key={s} value={s}>{SPORT_LABEL[s]}</option>
+                  ))}
+                </select>
                 <input
                   className="w-full rounded-xl bg-surface-2/50 border border-border px-3 py-2 text-sm outline-none focus:border-gold"
-                  placeholder="League (e.g. Premier League)"
+                  placeholder="League / competition"
                   value={match.league}
                   onChange={(e) => setMatch({ ...match, league: e.target.value })}
                   required
@@ -230,14 +248,14 @@ export function AdminComposer({ currentChannel }: { currentChannel: "A" | "B" })
                 <div className="grid grid-cols-2 gap-2">
                   <input
                     className="rounded-xl bg-surface-2/50 border border-border px-3 py-2 text-sm outline-none focus:border-gold"
-                    placeholder="Home"
+                    placeholder={participantLabels(match.sport).home}
                     value={match.home_team}
                     onChange={(e) => setMatch({ ...match, home_team: e.target.value })}
                     required
                   />
                   <input
                     className="rounded-xl bg-surface-2/50 border border-border px-3 py-2 text-sm outline-none focus:border-gold"
-                    placeholder="Away"
+                    placeholder={participantLabels(match.sport).away}
                     value={match.away_team}
                     onChange={(e) => setMatch({ ...match, away_team: e.target.value })}
                     required
