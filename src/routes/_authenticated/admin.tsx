@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
+import { SPORTS, SPORT_LABEL, participantLabels, sportLabel, type Sport } from "@/lib/sports";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard, ListChecks, Users, Megaphone, Radio, Settings as SettingsIcon,
@@ -206,6 +207,7 @@ function PredictionsTab() {
   const emptyForm = {
     id: undefined as string | undefined,
     channel: "A" as "A" | "B",
+    sport: "football" as Sport,
     match_name: "",
     league: "",
     home_team: "",
@@ -223,7 +225,7 @@ function PredictionsTab() {
   function openNew() { setForm(emptyForm); setOpen(true); }
   function openEdit(p: any) {
     setForm({
-      id: p.id, channel: p.channel, match_name: p.match_name, league: p.league,
+      id: p.id, channel: p.channel, sport: (p.sport ?? "football") as Sport, match_name: p.match_name, league: p.league,
       home_team: p.home_team, away_team: p.away_team,
       kickoff_at: new Date(p.kickoff_at).toISOString().slice(0, 16),
       prediction: p.prediction, odds: p.odds?.toString() ?? "",
@@ -239,7 +241,7 @@ function PredictionsTab() {
       toast.error("Fill in match details"); return;
     }
     upsertMut.mutate({
-      id: form.id, channel: form.channel, match_name: form.match_name, league: form.league,
+      id: form.id, channel: form.channel, sport: form.sport, match_name: form.match_name, league: form.league,
       home_team: form.home_team, away_team: form.away_team,
       kickoff_at: new Date(form.kickoff_at).toISOString(),
       prediction: form.prediction, odds: form.odds ? Number(form.odds) : null,
@@ -274,7 +276,7 @@ function PredictionsTab() {
               <div className="text-xs text-gold font-semibold">Ch. {p.channel}</div>
               <div className="min-w-0">
                 <div className="font-display text-base truncate">{p.home_team} vs {p.away_team}</div>
-                <div className="text-[10px] text-muted-foreground truncate uppercase tracking-widest">{p.league} · {new Date(p.kickoff_at).toLocaleString()}</div>
+                <div className="text-[10px] text-muted-foreground truncate uppercase tracking-widest">{sportLabel(p.sport)} · {p.league} · {new Date(p.kickoff_at).toLocaleString()}</div>
               </div>
               <div>
                 {p.tier === "free"
@@ -326,11 +328,16 @@ function PredictionsTab() {
                     </select>
                   </Field>
                 </div>
+                <Field label="Sport">
+                  <select value={form.sport} onChange={(e) => setForm({ ...form, sport: e.target.value as Sport })} className={inputCls}>
+                    {SPORTS.map((sp) => <option key={sp} value={sp}>{SPORT_LABEL[sp]}</option>)}
+                  </select>
+                </Field>
                 <Field label="Match name"><input className={inputCls} value={form.match_name} onChange={(e) => setForm({ ...form, match_name: e.target.value })} /></Field>
                 <Field label="League"><input className={inputCls} value={form.league} onChange={(e) => setForm({ ...form, league: e.target.value })} /></Field>
                 <div className="grid grid-cols-2 gap-3">
-                  <Field label="Home team"><input className={inputCls} value={form.home_team} onChange={(e) => setForm({ ...form, home_team: e.target.value })} /></Field>
-                  <Field label="Away team"><input className={inputCls} value={form.away_team} onChange={(e) => setForm({ ...form, away_team: e.target.value })} /></Field>
+                  <Field label={participantLabels(form.sport).home}><input className={inputCls} value={form.home_team} onChange={(e) => setForm({ ...form, home_team: e.target.value })} /></Field>
+                  <Field label={participantLabels(form.sport).away}><input className={inputCls} value={form.away_team} onChange={(e) => setForm({ ...form, away_team: e.target.value })} /></Field>
                 </div>
                 <Field label="Kickoff"><input type="datetime-local" className={inputCls} value={form.kickoff_at} onChange={(e) => setForm({ ...form, kickoff_at: e.target.value })} /></Field>
                 <Field label="Prediction"><input className={inputCls} value={form.prediction} onChange={(e) => setForm({ ...form, prediction: e.target.value })} placeholder="e.g. Home & Over 2.5" /></Field>
