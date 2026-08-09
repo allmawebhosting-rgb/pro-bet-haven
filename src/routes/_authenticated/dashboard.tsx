@@ -593,7 +593,7 @@ function NextMatchCard({ p, isVip, onZero }: { p: Prediction; isVip: boolean; on
         </div>
 
         <div className="mt-5 text-center">
-          <div className="text-[10px] uppercase tracking-[0.36em] text-muted-foreground/80">Kick-off in</div>
+          <div className="text-[10px] uppercase tracking-[0.36em] text-muted-foreground/80">Starts in</div>
           <div className="mt-3">
             <Countdown target={p.kickoff_at} onZero={onZero} />
           </div>
@@ -677,7 +677,7 @@ function PickBubble({ p, channelLetter, unseen, isAdmin }: { p: Prediction; chan
         {p.home_team} <span className="text-muted-foreground/70 text-base font-sans font-light">vs</span> {p.away_team}
       </div>
       <div className="mt-1 text-[11px] text-muted-foreground/80 flex items-center gap-1.5">
-        <Timer className="h-3 w-3 opacity-70" /> Kick-off {new Date(p.kickoff_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+        <Timer className="h-3 w-3 opacity-70" /> Starts {new Date(p.kickoff_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
       </div>
 
       <div className="mt-4 rounded-xl border border-gold/20 bg-background/50 px-4 py-3">
