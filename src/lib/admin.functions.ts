@@ -73,7 +73,7 @@ export const upsertPredictionAdmin = createServerFn({ method: "POST" })
       // Free picks always share the channel's configured drop time.
       releaseAt = channelSettings?.next_release_at ?? data.release_at;
     }
-    const payload = { ...data, release_at: releaseAt };
+    const payload = { ...data, sport: data.sport ?? "football", release_at: releaseAt };
     if (data.id) {
       const { id: _id, ...patch } = payload;
       const { error } = await supabaseAdmin.from("predictions").update(patch).eq("id", data.id);
