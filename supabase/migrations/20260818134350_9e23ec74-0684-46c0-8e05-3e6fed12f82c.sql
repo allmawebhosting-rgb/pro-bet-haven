@@ -1,0 +1,1 @@
+DELETE FROM public.predictions WHERE created_at = '2026-08-08 22:35:07.535255+00';
