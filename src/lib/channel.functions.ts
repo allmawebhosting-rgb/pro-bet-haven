@@ -64,13 +64,6 @@ export const postMatchPick = createServerFn({ method: "POST" })
 
     const targets: Array<"A" | "B"> = data.target === "all" ? ["A", "B"] : [data.target];
     const now = new Date().toISOString();
-    const { data: channelSettings } = await supabaseAdmin
-      .from("channel_settings")
-      .select("channel, next_release_at")
-      .in("channel", targets);
-    const releaseByChannel = new Map(
-      (channelSettings ?? []).map((setting) => [setting.channel as "A" | "B", setting.next_release_at]),
-    );
     const rows = targets.map((channel) => ({
       channel,
       sport: data.sport,
