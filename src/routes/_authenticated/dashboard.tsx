@@ -93,13 +93,11 @@ function Dashboard() {
     },
   });
 
+  const fetchPicks = useServerFn(getChannelPicks);
   const predictionsQ = useQuery({
     queryKey: ["predictions", channel],
     enabled: !!channel,
-    queryFn: async (): Promise<Prediction[]> => {
-      const { data } = await supabase.from("predictions").select("*").order("release_at", { ascending: true });
-      return (data as Prediction[]) ?? [];
-    },
+    queryFn: async (): Promise<Prediction[]> => ((await fetchPicks()) as Prediction[]) ?? [],
   });
 
   const announcementsQ = useQuery({
