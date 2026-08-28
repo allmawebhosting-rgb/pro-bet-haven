@@ -76,8 +76,8 @@ export const postMatchPick = createServerFn({ method: "POST" })
       odds: data.odds ?? null,
       confidence: data.confidence,
       published: true,
-      // Free picks are a single scheduled drop, not separate releases.
-      release_at: data.tier === "free" ? (releaseByChannel.get(channel) ?? now) : now,
+      // Picks go live in the channel as soon as they're posted.
+      release_at: now,
       tier: data.tier,
     }));
     const { error } = await supabaseAdmin.from("predictions").insert(rows);
