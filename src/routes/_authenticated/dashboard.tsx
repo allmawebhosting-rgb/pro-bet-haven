@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Countdown } from "@/components/Countdown";
 import { toast } from "sonner";
 import { getOrCreateMyProfile } from "@/lib/profile.functions";
-import { amIAdmin, markTourCompleted, updateLastSeen } from "@/lib/channel.functions";
+import { amIAdmin, getChannelPicks, markTourCompleted, updateLastSeen } from "@/lib/channel.functions";
 import { AdminComposer } from "@/components/channel/AdminComposer";
 import { RequestCenterProvider, useRequestCenter } from "@/components/requests/RequestCenter";
 import { SPORT_LABEL, sportLabel, type Sport } from "@/lib/sports";
