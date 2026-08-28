@@ -164,6 +164,47 @@ export const grantAdminSelf = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export const cloneMatchAdmin = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { id: string }) => d)
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    
+    // Fetch the original match
+    const { data: original, error: fetchError } = await supabaseAdmin
+      .from("predictions")
+      .select("*")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (fetchError) throw new Error(fetchError.message);
+    if (!original) throw new Error("Match not found");
+    
+    // Create a new match with the same details but a new ID and reset published state
+    const cloned = {
+      channel: original.channel,
+      sport: original.sport,
+      match_name: original.match_name,
+      league: original.league,
+      home_team: original.home_team,
+      away_team: original.away_team,
+      kickoff_at: original.kickoff_at,
+      prediction: original.prediction,
+      odds: original.odds,
+      confidence: original.confidence,
+      published: false, // Clone starts unpublished
+      release_at: original.release_at,
+      tier: original.tier,
+    };
+    
+    const { error: insertError } = await supabaseAdmin
+      .from("predictions")
+      .insert(cloned);
+    if (insertError) throw new Error(insertError.message);
+    
+    return { ok: true };
+  });
+
 export const adminAnalytics = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {

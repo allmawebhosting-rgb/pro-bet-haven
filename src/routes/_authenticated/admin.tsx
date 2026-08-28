@@ -14,7 +14,7 @@ import { Logo } from "@/components/Logo";
 import {
   listUsersAdmin, updateUserAdmin, upsertPredictionAdmin, deletePredictionAdmin,
   updateChannelSettingsAdmin, createAnnouncementAdmin, grantAdminSelf, adminAnalytics,
-  setMemberVipAdmin,
+  setMemberVipAdmin, cloneMatchAdmin,
 } from "@/lib/admin.functions";
 import { RequestsTab } from "@/components/admin/RequestsTab";
 import { updateSiteSettings } from "@/lib/site.functions";
@@ -193,6 +193,7 @@ function PredictionsTab() {
   });
   const upsertFn = useServerFn(upsertPredictionAdmin);
   const deleteFn = useServerFn(deletePredictionAdmin);
+  const cloneFn = useServerFn(cloneMatchAdmin);
   const upsertMut = useMutation({
     mutationFn: (d: Parameters<typeof upsertFn>[0]["data"]) => upsertFn({ data: d }),
     onSuccess: () => { toast.success("Saved"); qc.invalidateQueries({ queryKey: ["admin-predictions"] }); setOpen(false); },
@@ -201,6 +202,11 @@ function PredictionsTab() {
   const delMut = useMutation({
     mutationFn: (id: string) => deleteFn({ data: { id } }),
     onSuccess: () => { toast.success("Deleted"); qc.invalidateQueries({ queryKey: ["admin-predictions"] }); },
+  });
+  const cloneMut = useMutation({
+    mutationFn: (id: string) => cloneFn({ data: { id } }),
+    onSuccess: () => { toast.success("Match cloned"); qc.invalidateQueries({ queryKey: ["admin-predictions"] }); },
+    onError: (e: Error) => toast.error(e.message),
   });
 
   const [open, setOpen] = useState(false);
@@ -290,6 +296,7 @@ function PredictionsTab() {
               </div>
               <div className="flex justify-end gap-2">
                 <button onClick={() => openEdit(p)} className="rounded-full glass px-3 py-1 text-[11px] hover:border-gold/40">Edit</button>
+                <button onClick={() => cloneMut.mutate(p.id)} className="rounded-full glass px-3 py-1 text-[11px] hover:border-gold/40">Clone</button>
                 <button onClick={() => delMut.mutate(p.id)} className="rounded-full px-3 py-1 text-[11px] text-destructive border border-destructive/40">Del</button>
               </div>
             </div>
