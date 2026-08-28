@@ -660,20 +660,30 @@ function PickBubble({ p, channelLetter, unseen, isAdmin }: { p: Prediction; chan
         <Timer className="h-3 w-3 opacity-70" /> Starts {new Date(p.kickoff_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
       </div>
 
-      <div className="mt-4 rounded-xl border border-gold/20 bg-background/50 px-4 py-3">
-        <div className="text-[9px] uppercase tracking-[0.3em] text-gold/70">Prediction</div>
-        <div className="mt-1 font-display text-2xl gold-text leading-tight">{p.prediction}</div>
-        <div className="mt-2.5 flex items-center justify-between text-[11px]">
-          <span className="text-muted-foreground">
-            {p.odds != null ? <>Odds <b className="text-gold font-semibold tabular-nums">{p.odds}</b></> : <>&nbsp;</>}
-          </span>
-          <span className="inline-flex items-center gap-1">
-            {Array.from({ length: 5 }).map((_, k) => (
-              <span key={k} className={`h-1 w-1 rounded-full ${k < p.confidence ? "bg-gold" : "bg-muted"}`} />
-            ))}
-          </span>
+      {locked ? (
+        <div className="mt-4 rounded-xl border border-gold/25 bg-background/50 px-4 py-3 text-center">
+          <div className="text-[9px] uppercase tracking-[0.3em] text-gold/70">Prediction</div>
+          <div className="mt-1 font-display text-2xl gold-text leading-tight blur-[6px] select-none">Hidden tip</div>
+          <div className="mt-2.5 inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
+            <LockKeyhole className="h-3 w-3 text-gold/70" /> VIP pick locked — upgrade to unlock
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="mt-4 rounded-xl border border-gold/20 bg-background/50 px-4 py-3">
+          <div className="text-[9px] uppercase tracking-[0.3em] text-gold/70">Prediction</div>
+          <div className="mt-1 font-display text-2xl gold-text leading-tight">{p.prediction}</div>
+          <div className="mt-2.5 flex items-center justify-between text-[11px]">
+            <span className="text-muted-foreground">
+              {p.odds != null ? <>Odds <b className="text-gold font-semibold tabular-nums">{p.odds}</b></> : <>&nbsp;</>}
+            </span>
+            <span className="inline-flex items-center gap-1">
+              {Array.from({ length: 5 }).map((_, k) => (
+                <span key={k} className={`h-1 w-1 rounded-full ${k < p.confidence ? "bg-gold" : "bg-muted"}`} />
+              ))}
+            </span>
+          </div>
+        </div>
+      )}
 
       <MessageMeta views={randViews(p.id)} time={new Date(p.release_at)} pinned={isGuaranteed} />
     </MessageShell>
