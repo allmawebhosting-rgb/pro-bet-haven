@@ -143,10 +143,9 @@ function Dashboard() {
   }
 
   const feed = useMemo(() => {
-    const now = Date.now();
     const picks = (predictionsQ.data ?? [])
-      // Admins preview everything — including VIP picks and scheduled drops.
-      .filter((p) => isAdmin || (p.published && new Date(p.release_at).getTime() <= now))
+      // Everyone sees every published pick in their channel; VIP ones arrive locked.
+      .filter((p) => isAdmin || p.published)
       .filter((p) => sportFilter === "all" || (p.sport ?? "football") === sportFilter)
       .map((p) => ({ kind: "pick" as const, ts: new Date(p.release_at).getTime(), pick: p }));
     const anns = (announcementsQ.data ?? []).map((a) => ({
