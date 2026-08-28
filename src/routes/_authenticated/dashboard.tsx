@@ -354,7 +354,7 @@ function Dashboard() {
                 </div>
               )}
               <div>
-                {item.kind === "pick" && <PickBubble p={item.pick} channelLetter={profile.channel} unseen={unseen} isAdmin={isAdmin} />}
+                {item.kind === "pick" && <PickBubble p={item.pick} channelLetter={profile.channel} unseen={unseen} isAdmin={isAdmin} isVip={isVip} />}
                 {item.kind === "announcement" && <AnnouncementBubble a={item.announcement} channelLetter={profile.channel} unseen={unseen} />}
               </div>
             </div>
@@ -622,8 +622,8 @@ function TeamBadge({ name, locked, align = "left" }: { name: string; locked: boo
   );
 }
 
-function PickBubble({ p, channelLetter, unseen, isAdmin }: { p: Prediction; channelLetter: "A" | "B"; unseen?: boolean; isAdmin?: boolean }) {
-  const locked = !!p.locked;
+function PickBubble({ p, channelLetter, unseen, isAdmin, isVip }: { p: Prediction; channelLetter: "A" | "B"; unseen?: boolean; isAdmin?: boolean; isVip: boolean }) {
+  const locked = !!p.locked || (!isVip && p.tier === "vip");
   const isGuaranteed = !locked && p.confidence >= 5;
   const scheduled = new Date(p.release_at).getTime() > Date.now();
   return (
@@ -654,7 +654,9 @@ function PickBubble({ p, channelLetter, unseen, isAdmin }: { p: Prediction; chan
       </div>
 
       <div className="mt-2.5 font-display text-2xl sm:text-[28px] leading-[1.15]">
-        {p.home_team} <span className="text-muted-foreground/70 text-base font-sans font-light">vs</span> {p.away_team}
+        <span className={locked ? "blur-[5px] select-none" : ""}>{locked ? "Hidden team" : p.home_team}</span>
+        <span className="text-muted-foreground/70 text-base font-sans font-light"> vs </span>
+        <span className={locked ? "blur-[5px] select-none" : ""}>{locked ? "Hidden team" : p.away_team}</span>
       </div>
       <div className="mt-1 text-[11px] text-muted-foreground/80 flex items-center gap-1.5">
         <Timer className="h-3 w-3 opacity-70" /> Starts {new Date(p.kickoff_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
