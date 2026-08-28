@@ -623,7 +623,8 @@ function TeamBadge({ name, locked, align = "left" }: { name: string; locked: boo
 }
 
 function PickBubble({ p, channelLetter, unseen, isAdmin }: { p: Prediction; channelLetter: "A" | "B"; unseen?: boolean; isAdmin?: boolean }) {
-  const isGuaranteed = p.confidence >= 5;
+  const locked = !!p.locked;
+  const isGuaranteed = !locked && p.confidence >= 5;
   const scheduled = new Date(p.release_at).getTime() > Date.now();
   return (
     <MessageShell channelLetter={channelLetter} tone="fixed">
