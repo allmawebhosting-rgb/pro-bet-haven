@@ -635,6 +635,11 @@ function PickBubble({ p, channelLetter, unseen, isAdmin }: { p: Prediction; chan
         {p.tier === "free" && (
           <span className="text-[10px] uppercase tracking-[0.2em] text-gold/80">· Free</span>
         )}
+        {locked && (
+          <span className="inline-flex items-center gap-1 rounded-full border border-gold/40 px-1.5 py-0.5 text-[9px] uppercase tracking-[0.2em] text-gold">
+            <LockKeyhole className="h-2.5 w-2.5" /> VIP
+          </span>
+        )}
         {isAdmin && p.tier === "vip" && (
           <span className="rounded-full border border-gold/40 px-1.5 py-0.5 text-[9px] uppercase tracking-[0.2em] text-gold">VIP only</span>
         )}
