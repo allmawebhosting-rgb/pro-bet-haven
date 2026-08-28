@@ -539,7 +539,7 @@ function UnreadDivider({ count }: { count: number }) {
 }
 
 function NextMatchCard({ p, isVip, onZero }: { p: Prediction; isVip: boolean; onZero: () => void }) {
-  const locked = !isVip && p.tier === "vip";
+  const locked = p.locked ?? (!isVip && p.tier === "vip");
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
