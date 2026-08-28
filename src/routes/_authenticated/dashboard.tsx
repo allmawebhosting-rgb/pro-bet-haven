@@ -291,7 +291,7 @@ function Dashboard() {
           </div>
         </div>
 
-        {/* Pinned bar (admin pinned message OR countdown fallback) */}
+        {/* Pinned bar */}
         {pinnedMsg ? (
           <div className="border-t border-gold/12">
             <div className="mx-auto max-w-2xl px-3 sm:px-4 py-1.5 flex items-center gap-3">
@@ -299,26 +299,6 @@ function Dashboard() {
               <div className="min-w-0 flex-1">
                 <div className="text-[9px] uppercase tracking-[0.3em] text-gold/70">Pinned</div>
                 <div className="text-xs text-foreground/80 truncate">{pinnedMsg.title || pinnedMsg.body}</div>
-              </div>
-              {nextRelease && (
-                <div className="text-[11px] font-mono tabular-nums text-gold/80 shrink-0">
-                  <Countdown target={nextRelease} onZero={() => predictionsQ.refetch()} compact />
-                </div>
-              )}
-            </div>
-          </div>
-        ) : nextRelease ? (
-          <div className="border-t border-gold/12">
-            <div className="mx-auto max-w-2xl px-3 sm:px-4 py-1.5 flex items-center gap-3">
-              <Pin className="h-3 w-3 text-gold/70 rotate-45 shrink-0" />
-              <div className="min-w-0 flex-1">
-                <div className="text-[9px] uppercase tracking-[0.3em] text-gold/70">Next drop</div>
-                <div className="text-xs text-muted-foreground truncate">
-                  Every {settingsQ.data?.release_interval_minutes ?? 60} min
-                </div>
-              </div>
-              <div className="text-[11px] font-mono tabular-nums text-gold shrink-0">
-                <Countdown target={nextRelease} onZero={() => predictionsQ.refetch()} compact />
               </div>
             </div>
           </div>
