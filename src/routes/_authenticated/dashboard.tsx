@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Countdown } from "@/components/Countdown";
 import { toast } from "sonner";
 import { getOrCreateMyProfile } from "@/lib/profile.functions";
-import { amIAdmin, markTourCompleted, updateLastSeen } from "@/lib/channel.functions";
+import { amIAdmin, getChannelPicks, markTourCompleted, updateLastSeen } from "@/lib/channel.functions";
 import { AdminComposer } from "@/components/channel/AdminComposer";
 import { RequestCenterProvider, useRequestCenter } from "@/components/requests/RequestCenter";
 import { SPORT_LABEL, sportLabel, type Sport } from "@/lib/sports";
@@ -42,6 +42,7 @@ type Prediction = {
   home_team: string; away_team: string; kickoff_at: string; prediction: string;
   odds: number | null; confidence: number; published: boolean; release_at: string;
   tier: "free" | "vip";
+  locked?: boolean;
 };
 type ChannelSettings = { channel: "A" | "B"; next_release_at: string; release_interval_minutes: number };
 type Announcement = {
@@ -92,13 +93,11 @@ function Dashboard() {
     },
   });
 
+  const fetchPicks = useServerFn(getChannelPicks);
   const predictionsQ = useQuery({
     queryKey: ["predictions", channel],
     enabled: !!channel,
-    queryFn: async (): Promise<Prediction[]> => {
-      const { data } = await supabase.from("predictions").select("*").order("release_at", { ascending: true });
-      return (data as Prediction[]) ?? [];
-    },
+    queryFn: async (): Promise<Prediction[]> => ((await fetchPicks()) as Prediction[]) ?? [],
   });
 
   const announcementsQ = useQuery({
@@ -144,10 +143,9 @@ function Dashboard() {
   }
 
   const feed = useMemo(() => {
-    const now = Date.now();
     const picks = (predictionsQ.data ?? [])
-      // Admins preview everything — including VIP picks and scheduled drops.
-      .filter((p) => isAdmin || (p.published && new Date(p.release_at).getTime() <= now))
+      // Everyone sees every published pick in their channel; VIP ones arrive locked.
+      .filter((p) => isAdmin || p.published)
       .filter((p) => sportFilter === "all" || (p.sport ?? "football") === sportFilter)
       .map((p) => ({ kind: "pick" as const, ts: new Date(p.release_at).getTime(), pick: p }));
     const anns = (announcementsQ.data ?? []).map((a) => ({
@@ -211,11 +209,7 @@ function Dashboard() {
   const nextMatch = useMemo(() => {
     const now = Date.now();
     return (predictionsQ.data ?? [])
-      .filter((p) =>
-        p.published &&
-        new Date(p.release_at).getTime() <= now &&
-        new Date(p.kickoff_at).getTime() > now,
-      )
+      .filter((p) => p.published && new Date(p.kickoff_at).getTime() > now)
       .sort((a, b) => new Date(a.kickoff_at).getTime() - new Date(b.kickoff_at).getTime())[0];
   }, [predictionsQ.data]);
 
@@ -247,7 +241,7 @@ function Dashboard() {
 
   const meta = CHANNEL_META;
   const freeRemaining = Math.max(0, 2 - (profile.free_picks_claimed ?? 0));
-  const nextRelease = settingsQ.data?.next_release_at;
+  
   const pinnedMsg = (announcementsQ.data ?? []).filter((a) => a.pinned).slice(-1)[0];
   const showTour = !profile.tour_completed && !!announcementsQ.data;
 
@@ -297,7 +291,7 @@ function Dashboard() {
           </div>
         </div>
 
-        {/* Pinned bar (admin pinned message OR countdown fallback) */}
+        {/* Pinned bar */}
         {pinnedMsg ? (
           <div className="border-t border-gold/12">
             <div className="mx-auto max-w-2xl px-3 sm:px-4 py-1.5 flex items-center gap-3">
@@ -305,26 +299,6 @@ function Dashboard() {
               <div className="min-w-0 flex-1">
                 <div className="text-[9px] uppercase tracking-[0.3em] text-gold/70">Pinned</div>
                 <div className="text-xs text-foreground/80 truncate">{pinnedMsg.title || pinnedMsg.body}</div>
-              </div>
-              {nextRelease && (
-                <div className="text-[11px] font-mono tabular-nums text-gold/80 shrink-0">
-                  <Countdown target={nextRelease} onZero={() => predictionsQ.refetch()} compact />
-                </div>
-              )}
-            </div>
-          </div>
-        ) : nextRelease ? (
-          <div className="border-t border-gold/12">
-            <div className="mx-auto max-w-2xl px-3 sm:px-4 py-1.5 flex items-center gap-3">
-              <Pin className="h-3 w-3 text-gold/70 rotate-45 shrink-0" />
-              <div className="min-w-0 flex-1">
-                <div className="text-[9px] uppercase tracking-[0.3em] text-gold/70">Next drop</div>
-                <div className="text-xs text-muted-foreground truncate">
-                  Every {settingsQ.data?.release_interval_minutes ?? 60} min
-                </div>
-              </div>
-              <div className="text-[11px] font-mono tabular-nums text-gold shrink-0">
-                <Countdown target={nextRelease} onZero={() => predictionsQ.refetch()} compact />
               </div>
             </div>
           </div>
@@ -565,7 +539,7 @@ function UnreadDivider({ count }: { count: number }) {
 }
 
 function NextMatchCard({ p, isVip, onZero }: { p: Prediction; isVip: boolean; onZero: () => void }) {
-  const locked = !isVip && p.tier === "vip";
+  const locked = p.locked ?? (!isVip && p.tier === "vip");
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -649,7 +623,8 @@ function TeamBadge({ name, locked, align = "left" }: { name: string; locked: boo
 }
 
 function PickBubble({ p, channelLetter, unseen, isAdmin }: { p: Prediction; channelLetter: "A" | "B"; unseen?: boolean; isAdmin?: boolean }) {
-  const isGuaranteed = p.confidence >= 5;
+  const locked = !!p.locked;
+  const isGuaranteed = !locked && p.confidence >= 5;
   const scheduled = new Date(p.release_at).getTime() > Date.now();
   return (
     <MessageShell channelLetter={channelLetter} tone="fixed">
@@ -659,6 +634,11 @@ function PickBubble({ p, channelLetter, unseen, isAdmin }: { p: Prediction; chan
         <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{sportLabel(p.sport)} · {p.league}</span>
         {p.tier === "free" && (
           <span className="text-[10px] uppercase tracking-[0.2em] text-gold/80">· Free</span>
+        )}
+        {locked && (
+          <span className="inline-flex items-center gap-1 rounded-full border border-gold/40 px-1.5 py-0.5 text-[9px] uppercase tracking-[0.2em] text-gold">
+            <LockKeyhole className="h-2.5 w-2.5" /> VIP
+          </span>
         )}
         {isAdmin && p.tier === "vip" && (
           <span className="rounded-full border border-gold/40 px-1.5 py-0.5 text-[9px] uppercase tracking-[0.2em] text-gold">VIP only</span>
@@ -680,20 +660,30 @@ function PickBubble({ p, channelLetter, unseen, isAdmin }: { p: Prediction; chan
         <Timer className="h-3 w-3 opacity-70" /> Starts {new Date(p.kickoff_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
       </div>
 
-      <div className="mt-4 rounded-xl border border-gold/20 bg-background/50 px-4 py-3">
-        <div className="text-[9px] uppercase tracking-[0.3em] text-gold/70">Prediction</div>
-        <div className="mt-1 font-display text-2xl gold-text leading-tight">{p.prediction}</div>
-        <div className="mt-2.5 flex items-center justify-between text-[11px]">
-          <span className="text-muted-foreground">
-            {p.odds != null ? <>Odds <b className="text-gold font-semibold tabular-nums">{p.odds}</b></> : <>&nbsp;</>}
-          </span>
-          <span className="inline-flex items-center gap-1">
-            {Array.from({ length: 5 }).map((_, k) => (
-              <span key={k} className={`h-1 w-1 rounded-full ${k < p.confidence ? "bg-gold" : "bg-muted"}`} />
-            ))}
-          </span>
+      {locked ? (
+        <div className="mt-4 rounded-xl border border-gold/25 bg-background/50 px-4 py-3 text-center">
+          <div className="text-[9px] uppercase tracking-[0.3em] text-gold/70">Prediction</div>
+          <div className="mt-1 font-display text-2xl gold-text leading-tight blur-[6px] select-none">Hidden tip</div>
+          <div className="mt-2.5 inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
+            <LockKeyhole className="h-3 w-3 text-gold/70" /> VIP pick locked — upgrade to unlock
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="mt-4 rounded-xl border border-gold/20 bg-background/50 px-4 py-3">
+          <div className="text-[9px] uppercase tracking-[0.3em] text-gold/70">Prediction</div>
+          <div className="mt-1 font-display text-2xl gold-text leading-tight">{p.prediction}</div>
+          <div className="mt-2.5 flex items-center justify-between text-[11px]">
+            <span className="text-muted-foreground">
+              {p.odds != null ? <>Odds <b className="text-gold font-semibold tabular-nums">{p.odds}</b></> : <>&nbsp;</>}
+            </span>
+            <span className="inline-flex items-center gap-1">
+              {Array.from({ length: 5 }).map((_, k) => (
+                <span key={k} className={`h-1 w-1 rounded-full ${k < p.confidence ? "bg-gold" : "bg-muted"}`} />
+              ))}
+            </span>
+          </div>
+        </div>
+      )}
 
       <MessageMeta views={randViews(p.id)} time={new Date(p.release_at)} pinned={isGuaranteed} />
     </MessageShell>

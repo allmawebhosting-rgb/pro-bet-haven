@@ -64,13 +64,6 @@ export const postMatchPick = createServerFn({ method: "POST" })
 
     const targets: Array<"A" | "B"> = data.target === "all" ? ["A", "B"] : [data.target];
     const now = new Date().toISOString();
-    const { data: channelSettings } = await supabaseAdmin
-      .from("channel_settings")
-      .select("channel, next_release_at")
-      .in("channel", targets);
-    const releaseByChannel = new Map(
-      (channelSettings ?? []).map((setting) => [setting.channel as "A" | "B", setting.next_release_at]),
-    );
     const rows = targets.map((channel) => ({
       channel,
       sport: data.sport,
@@ -83,8 +76,8 @@ export const postMatchPick = createServerFn({ method: "POST" })
       odds: data.odds ?? null,
       confidence: data.confidence,
       published: true,
-      // Free picks are a single scheduled drop, not separate releases.
-      release_at: data.tier === "free" ? (releaseByChannel.get(channel) ?? now) : now,
+      // Picks go live in the channel as soon as they're posted.
+      release_at: now,
       tier: data.tier,
     }));
     const { error } = await supabaseAdmin.from("predictions").insert(rows);
@@ -126,3 +119,27 @@ export const amIAdmin = createServerFn({ method: "GET" })
     return { admin: !!data };
   });
 
+
+export const getChannelPicks = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const [{ data: profile }, { data: isAdmin }] = await Promise.all([
+      context.supabase.from("profiles").select("channel, is_vip").eq("id", context.userId).maybeSingle(),
+      context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" }),
+    ]);
+    if (!profile) return [];
+
+    const { data, error } = await context.supabase
+      .from("predictions")
+      .select("*")
+      .order("release_at", { ascending: true });
+    if (error) throw new Error(error.message);
+
+    const canSeeVip = !!isAdmin || !!profile.is_vip;
+    return (data ?? []).map((p) => {
+      const locked = !canSeeVip && p.tier === "vip";
+      if (!locked) return { ...p, locked: false };
+      // Never ship the tip itself to a member who hasn't unlocked VIP.
+      return { ...p, locked: true, prediction: "", odds: null, confidence: 0 };
+    });
+  });

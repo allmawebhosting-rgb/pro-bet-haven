@@ -63,17 +63,7 @@ export const upsertPredictionAdmin = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    let releaseAt = data.release_at;
-    if (data.tier === "free") {
-      const { data: channelSettings } = await supabaseAdmin
-        .from("channel_settings")
-        .select("next_release_at")
-        .eq("channel", data.channel)
-        .maybeSingle();
-      // Free picks always share the channel's configured drop time.
-      releaseAt = channelSettings?.next_release_at ?? data.release_at;
-    }
-    const payload = { ...data, sport: data.sport ?? "football", release_at: releaseAt };
+    const payload = { ...data, sport: data.sport ?? "football", release_at: data.release_at };
     if (data.id) {
       const { id: _id, ...patch } = payload;
       const { error } = await supabaseAdmin.from("predictions").update(patch).eq("id", data.id);
