@@ -126,3 +126,27 @@ export const amIAdmin = createServerFn({ method: "GET" })
     return { admin: !!data };
   });
 
+
+export const getChannelPicks = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const [{ data: profile }, { data: isAdmin }] = await Promise.all([
+      context.supabase.from("profiles").select("channel, is_vip").eq("id", context.userId).maybeSingle(),
+      context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" }),
+    ]);
+    if (!profile) return [];
+
+    const { data, error } = await context.supabase
+      .from("predictions")
+      .select("*")
+      .order("release_at", { ascending: true });
+    if (error) throw new Error(error.message);
+
+    const canSeeVip = !!isAdmin || !!profile.is_vip;
+    return (data ?? []).map((p) => {
+      const locked = !canSeeVip && p.tier === "vip";
+      if (!locked) return { ...p, locked: false };
+      // Never ship the tip itself to a member who hasn't unlocked VIP.
+      return { ...p, locked: true, prediction: "", odds: null, confidence: 0 };
+    });
+  });
