@@ -42,6 +42,7 @@ type Prediction = {
   home_team: string; away_team: string; kickoff_at: string; prediction: string;
   odds: number | null; confidence: number; published: boolean; release_at: string;
   tier: "free" | "vip";
+  locked?: boolean;
 };
 type ChannelSettings = { channel: "A" | "B"; next_release_at: string; release_interval_minutes: number };
 type Announcement = {
