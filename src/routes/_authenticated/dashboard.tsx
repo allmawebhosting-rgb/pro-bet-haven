@@ -540,6 +540,12 @@ function UnreadDivider({ count }: { count: number }) {
 
 function NextMatchCard({ p, isVip, onZero }: { p: Prediction; isVip: boolean; onZero: () => void }) {
   const locked = p.locked ?? (!isVip && p.tier === "vip");
+  
+  // Free predictions hidden until 30 minutes before kickoff
+  const now = Date.now();
+  const kickoffTime = new Date(p.kickoff_at).getTime();
+  const minutesUntilKickoff = (kickoffTime - now) / (1000 * 60);
+  const freePredictionHidden = p.tier === "free" && minutesUntilKickoff > 30;
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -587,22 +593,36 @@ function NextMatchCard({ p, isVip, onZero }: { p: Prediction; isVip: boolean; on
         </div>
         <div className="mt-4 flex items-center justify-between rounded-xl border border-white/[0.06] bg-black/20 px-3 py-2.5">
           <span className="inline-flex items-center gap-2 text-[9px] uppercase tracking-[0.24em] text-muted-foreground">
-            {locked ? <LockKeyhole className="h-3 w-3 text-gold/70" /> : <Sparkles className="h-3 w-3 text-gold/70" />}
-            {locked ? "VIP pick locked" : "Prepared for your channel"}
+            {locked ? (
+              <>
+                <LockKeyhole className="h-3 w-3 text-gold/70" />
+                VIP pick locked
+              </>
+            ) : freePredictionHidden ? (
+              <>
+                <Timer className="h-3 w-3 text-gold/70" />
+                Prediction locked
+              </>
+            ) : (
+              <>
+                <Sparkles className="h-3 w-3 text-gold/70" />
+                Prepared for your channel
+              </>
+            )}
           </span>
           {p.odds != null && <span className="font-mono text-xs text-gold">ODDS {p.odds}</span>}
         </div>
-        {locked && (
+        {(locked || freePredictionHidden) && (
           <div className="text-center">
             <RequestCta
               kind="next_game"
               subject="Buy the next game"
               draft={`I want to buy the next game (kickoff ${new Date(p.kickoff_at).toLocaleString()}).`}
-              label="Unlock this match"
+              label={locked ? "Unlock this match" : "Reveal early"}
               className="mt-4 inline-flex items-center gap-1.5 rounded-full gold-bg px-5 py-2.5 text-[11px] font-semibold shadow-[0_10px_28px_-12px_var(--gold)]"
             />
           </div>
-          )}
+        )}
       </div>
     </motion.div>
   );
@@ -626,6 +646,12 @@ function PickBubble({ p, channelLetter, unseen, isAdmin, isVip }: { p: Predictio
   const locked = !!p.locked || (!isVip && p.tier === "vip");
   const isGuaranteed = !locked && p.confidence >= 5;
   const scheduled = new Date(p.release_at).getTime() > Date.now();
+  
+  // Free predictions hidden until 30 minutes before kickoff
+  const now = Date.now();
+  const kickoffTime = new Date(p.kickoff_at).getTime();
+  const minutesUntilKickoff = (kickoffTime - now) / (1000 * 60);
+  const freePredictionHidden = p.tier === "free" && minutesUntilKickoff > 30 && !isAdmin;
   return (
     <MessageShell channelLetter={channelLetter} tone="fixed">
       <div className="flex items-center gap-2 flex-wrap">
@@ -634,6 +660,11 @@ function PickBubble({ p, channelLetter, unseen, isAdmin, isVip }: { p: Predictio
         <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{sportLabel(p.sport)} · {p.league}</span>
         {p.tier === "free" && (
           <span className="text-[10px] uppercase tracking-[0.2em] text-gold/80">· Free</span>
+        )}
+        {freePredictionHidden && (
+          <span className="inline-flex items-center gap-1 rounded-full border border-gold/40 px-1.5 py-0.5 text-[9px] uppercase tracking-[0.2em] text-gold">
+            <Timer className="h-2.5 w-2.5" /> Locked
+          </span>
         )}
         {locked && (
           <span className="inline-flex items-center gap-1 rounded-full border border-gold/40 px-1.5 py-0.5 text-[9px] uppercase tracking-[0.2em] text-gold">
@@ -668,6 +699,14 @@ function PickBubble({ p, channelLetter, unseen, isAdmin, isVip }: { p: Predictio
           <div className="mt-1 font-display text-2xl gold-text leading-tight blur-[6px] select-none">Hidden tip</div>
           <div className="mt-2.5 inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
             <LockKeyhole className="h-3 w-3 text-gold/70" /> VIP pick locked — upgrade to unlock
+          </div>
+        </div>
+      ) : freePredictionHidden ? (
+        <div className="mt-4 rounded-xl border border-gold/25 bg-background/50 px-4 py-3 text-center">
+          <div className="text-[9px] uppercase tracking-[0.3em] text-gold/70">Prediction</div>
+          <div className="mt-1 font-display text-2xl gold-text leading-tight blur-[6px] select-none">Coming soon</div>
+          <div className="mt-2.5 inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
+            <Timer className="h-3 w-3 text-gold/70" /> Reveals 30 min before kickoff
           </div>
         </div>
       ) : (
