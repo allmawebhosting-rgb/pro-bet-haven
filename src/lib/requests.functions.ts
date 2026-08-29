@@ -7,10 +7,20 @@ export type RequestStatus = "open" | "answered" | "closed";
 const MAX_BODY = 2000;
 const MAX_SUBJECT = 140;
 
-function cleanBody(v: string) {
+function cleanBody(v: string, allowEmpty = false) {
   const s = (v ?? "").trim();
-  if (!s) throw new Error("Message cannot be empty");
+  if (!s && !allowEmpty) throw new Error("Message cannot be empty");
   if (s.length > MAX_BODY) throw new Error(`Message must be under ${MAX_BODY} characters`);
+  return s;
+}
+
+const MAX_IMAGE_CHARS = 1_600_000; // ~1.1MB base64 data URL
+
+function cleanImage(v?: string | null) {
+  const s = (v ?? "").trim();
+  if (!s) return null;
+  if (!s.startsWith("data:image/")) throw new Error("Invalid image");
+  if (s.length > MAX_IMAGE_CHARS) throw new Error("Image is too large — try a smaller screenshot");
   return s;
 }
 
