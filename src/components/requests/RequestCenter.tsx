@@ -1,9 +1,10 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useMemo, useRef, useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { AnimatePresence, motion } from "framer-motion";
-import { MessageSquare, X, Send, Crown, Ticket, ChevronLeft } from "lucide-react";
+import { MessageSquare, X, Send, Crown, Ticket, ChevronLeft, ImagePlus } from "lucide-react";
 import { toast } from "sonner";
+import { fileToImageDataUrl } from "@/lib/image-upload";
 import {
   createRequest, listMyRequests, listRequestMessages, postMessage,
   type RequestKind,
@@ -55,6 +56,7 @@ function RequestDrawer({ opts, onClose }: { opts: OpenOpts; onClose: () => void 
   const [kind, setKind] = useState<RequestKind>(opts.kind ?? "general");
   const [subject, setSubject] = useState(opts.subject ?? "");
   const [body, setBody] = useState(opts.draft ?? "");
+  const [image, setImage] = useState<string | null>(null);
 
   const listQ = useQuery({
     queryKey: ["my-requests"],
@@ -63,10 +65,10 @@ function RequestDrawer({ opts, onClose }: { opts: OpenOpts; onClose: () => void 
   });
 
   const createMut = useMutation({
-    mutationFn: () => createFn({ data: { kind, subject: subject || KIND_LABEL[kind], body } }),
+    mutationFn: () => createFn({ data: { kind, subject: subject || KIND_LABEL[kind], body, imageUrl: image ?? undefined } }),
     onSuccess: (r) => {
       toast.success("Sent to the admin");
-      setBody(""); setSubject(""); setComposing(false);
+      setBody(""); setSubject(""); setImage(null); setComposing(false);
       qc.invalidateQueries({ queryKey: ["my-requests"] });
       setActiveId(r.id);
     },
@@ -116,8 +118,9 @@ function RequestDrawer({ opts, onClose }: { opts: OpenOpts; onClose: () => void 
             <Field label="Message">
               <textarea rows={5} className={inputCls} value={body} maxLength={2000} onChange={(e) => setBody(e.target.value)} placeholder="Tell the admin what you want…" />
             </Field>
+            <AttachmentPicker image={image} onChange={setImage} />
             <button
-              disabled={createMut.isPending || !body.trim()}
+              disabled={createMut.isPending || (!body.trim() && !image)}
               onClick={() => createMut.mutate()}
               className="w-full rounded-full gold-bg px-5 py-3 text-sm font-semibold disabled:opacity-50"
             >
