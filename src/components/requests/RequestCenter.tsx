@@ -169,6 +169,7 @@ function Thread({ requestId }: { requestId: string }) {
   const msgsFn = useServerFn(listRequestMessages);
   const sendFn = useServerFn(postMessage);
   const [text, setText] = useState("");
+  const [image, setImage] = useState<string | null>(null);
 
   const msgsQ = useQuery({
     queryKey: ["my-request-messages", requestId],
@@ -177,9 +178,10 @@ function Thread({ requestId }: { requestId: string }) {
   });
 
   const sendMut = useMutation({
-    mutationFn: () => sendFn({ data: { requestId, body: text } }),
+    mutationFn: () => sendFn({ data: { requestId, body: text, imageUrl: image ?? undefined } }),
     onSuccess: () => {
       setText("");
+      setImage(null);
       qc.invalidateQueries({ queryKey: ["my-request-messages", requestId] });
       qc.invalidateQueries({ queryKey: ["my-requests"] });
     },
@@ -195,6 +197,7 @@ function Thread({ requestId }: { requestId: string }) {
               m.sender_role === "admin" ? "glass" : "gold-bg text-primary-foreground"
             }`}>
               {m.body}
+              {m.image_url && <MessageImage src={m.image_url} />}
               <div className="mt-1 text-[10px] opacity-70">
                 {new Date(m.created_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
               </div>
