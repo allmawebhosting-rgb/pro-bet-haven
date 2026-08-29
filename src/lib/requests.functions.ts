@@ -99,7 +99,7 @@ export const postMessage = createServerFn({ method: "POST" })
 
     const { error } = await context.supabase
       .from("request_messages")
-      .insert({ request_id: data.requestId, sender_id: context.userId, sender_role: "member", body });
+      .insert({ request_id: data.requestId, sender_id: context.userId, sender_role: "member", body, image_url: imageUrl });
     if (error) throw new Error(error.message);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
