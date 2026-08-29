@@ -548,6 +548,7 @@ function NextMatchCard({ p, isVip, onZero }: { p: Prediction; isVip: boolean; on
   const minutesUntilKickoff = (kickoffTime - now) / (1000 * 60);
   const { unlocked: shareUnlocked } = useShareUnlocked(p.id);
   const freePredictionHidden = p.tier === "free" && minutesUntilKickoff > 30 && !shareUnlocked;
+  const shareGate = p.tier === "free" && minutesUntilKickoff > 30;
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -614,7 +615,7 @@ function NextMatchCard({ p, isVip, onZero }: { p: Prediction; isVip: boolean; on
           </span>
           {p.odds != null && <span className="font-mono text-xs text-gold">ODDS {p.odds}</span>}
         </div>
-        {freePredictionHidden && (
+        {shareGate && (
           <ShareToReveal
             id={p.id}
             message={`🔥 Next game on Aurum Fixed — ${p.home_team} vs ${p.away_team}. Join the channel:`}
@@ -662,6 +663,7 @@ function PickBubble({ p, channelLetter, unseen, isAdmin, isVip }: { p: Predictio
   const minutesUntilKickoff = (kickoffTime - now) / (1000 * 60);
   const { unlocked: shareUnlocked } = useShareUnlocked(p.id);
   const freePredictionHidden = p.tier === "free" && minutesUntilKickoff > 30 && !isAdmin && !shareUnlocked;
+  const shareGate = p.tier === "free" && minutesUntilKickoff > 30 && !isAdmin;
   return (
     <MessageShell channelLetter={channelLetter} tone="fixed">
       <div className="flex items-center gap-2 flex-wrap">
@@ -728,6 +730,15 @@ function PickBubble({ p, channelLetter, unseen, isAdmin, isVip }: { p: Predictio
         <div className="mt-4 rounded-xl border border-gold/20 bg-background/50 px-4 py-3">
           <div className="text-[9px] uppercase tracking-[0.3em] text-gold/70">Prediction</div>
           <div className="mt-1 font-display text-2xl gold-text leading-tight">{p.prediction}</div>
+          {shareGate && shareUnlocked && (
+            <div className="mt-3 text-center">
+              <ShareToReveal
+                proofOnly
+                id={p.id}
+                message={`🔥 ${p.home_team} vs ${p.away_team} — my fixed pick drops on Aurum Fixed. Join the channel:`}
+              />
+            </div>
+          )}
           <div className="mt-2.5 flex items-center justify-between text-[11px]">
             <span className="text-muted-foreground">
               {p.odds != null ? <>Odds <b className="text-gold font-semibold tabular-nums">{p.odds}</b></> : <>&nbsp;</>}

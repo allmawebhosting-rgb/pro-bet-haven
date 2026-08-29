@@ -1,9 +1,10 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useMemo, useRef, useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { AnimatePresence, motion } from "framer-motion";
-import { MessageSquare, X, Send, Crown, Ticket, ChevronLeft } from "lucide-react";
+import { MessageSquare, X, Send, Crown, Ticket, ChevronLeft, ImagePlus } from "lucide-react";
 import { toast } from "sonner";
+import { fileToImageDataUrl } from "@/lib/image-upload";
 import {
   createRequest, listMyRequests, listRequestMessages, postMessage,
   type RequestKind,
@@ -55,6 +56,7 @@ function RequestDrawer({ opts, onClose }: { opts: OpenOpts; onClose: () => void 
   const [kind, setKind] = useState<RequestKind>(opts.kind ?? "general");
   const [subject, setSubject] = useState(opts.subject ?? "");
   const [body, setBody] = useState(opts.draft ?? "");
+  const [image, setImage] = useState<string | null>(null);
 
   const listQ = useQuery({
     queryKey: ["my-requests"],
@@ -63,10 +65,10 @@ function RequestDrawer({ opts, onClose }: { opts: OpenOpts; onClose: () => void 
   });
 
   const createMut = useMutation({
-    mutationFn: () => createFn({ data: { kind, subject: subject || KIND_LABEL[kind], body } }),
+    mutationFn: () => createFn({ data: { kind, subject: subject || KIND_LABEL[kind], body, imageUrl: image ?? undefined } }),
     onSuccess: (r) => {
       toast.success("Sent to the admin");
-      setBody(""); setSubject(""); setComposing(false);
+      setBody(""); setSubject(""); setImage(null); setComposing(false);
       qc.invalidateQueries({ queryKey: ["my-requests"] });
       setActiveId(r.id);
     },
@@ -116,8 +118,9 @@ function RequestDrawer({ opts, onClose }: { opts: OpenOpts; onClose: () => void 
             <Field label="Message">
               <textarea rows={5} className={inputCls} value={body} maxLength={2000} onChange={(e) => setBody(e.target.value)} placeholder="Tell the admin what you want…" />
             </Field>
+            <AttachmentPicker image={image} onChange={setImage} />
             <button
-              disabled={createMut.isPending || !body.trim()}
+              disabled={createMut.isPending || (!body.trim() && !image)}
               onClick={() => createMut.mutate()}
               className="w-full rounded-full gold-bg px-5 py-3 text-sm font-semibold disabled:opacity-50"
             >
@@ -166,6 +169,7 @@ function Thread({ requestId }: { requestId: string }) {
   const msgsFn = useServerFn(listRequestMessages);
   const sendFn = useServerFn(postMessage);
   const [text, setText] = useState("");
+  const [image, setImage] = useState<string | null>(null);
 
   const msgsQ = useQuery({
     queryKey: ["my-request-messages", requestId],
@@ -174,9 +178,10 @@ function Thread({ requestId }: { requestId: string }) {
   });
 
   const sendMut = useMutation({
-    mutationFn: () => sendFn({ data: { requestId, body: text } }),
+    mutationFn: () => sendFn({ data: { requestId, body: text, imageUrl: image ?? undefined } }),
     onSuccess: () => {
       setText("");
+      setImage(null);
       qc.invalidateQueries({ queryKey: ["my-request-messages", requestId] });
       qc.invalidateQueries({ queryKey: ["my-requests"] });
     },
@@ -192,6 +197,7 @@ function Thread({ requestId }: { requestId: string }) {
               m.sender_role === "admin" ? "glass" : "gold-bg text-primary-foreground"
             }`}>
               {m.body}
+              {m.image_url && <MessageImage src={m.image_url} />}
               <div className="mt-1 text-[10px] opacity-70">
                 {new Date(m.created_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
               </div>
@@ -199,21 +205,84 @@ function Thread({ requestId }: { requestId: string }) {
           </div>
         ))}
       </div>
-      <div className="border-t border-border/50 p-3 flex gap-2">
-        <input
-          className={inputCls} value={text} maxLength={2000}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter" && text.trim()) sendMut.mutate(); }}
-          placeholder="Reply…"
-        />
-        <button
-          onClick={() => sendMut.mutate()} disabled={!text.trim() || sendMut.isPending}
-          className="rounded-full gold-bg px-4 grid place-items-center disabled:opacity-50"
-        >
-          <Send className="h-4 w-4" />
-        </button>
+      <div className="border-t border-border/50 p-3 space-y-2">
+        <AttachmentPicker image={image} onChange={setImage} />
+        <div className="flex gap-2">
+          <input
+            className={inputCls} value={text} maxLength={2000}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter" && (text.trim() || image)) sendMut.mutate(); }}
+            placeholder="Reply…"
+          />
+          <button
+            onClick={() => sendMut.mutate()} disabled={(!text.trim() && !image) || sendMut.isPending}
+            className="rounded-full gold-bg px-4 grid place-items-center disabled:opacity-50"
+          >
+            <Send className="h-4 w-4" />
+          </button>
+        </div>
       </div>
     </>
+  );
+}
+
+function AttachmentPicker({ image, onChange }: { image: string | null; onChange: (v: string | null) => void }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+
+  const pick = async (file: File | undefined) => {
+    if (!file) return;
+    setBusy(true);
+    try {
+      onChange(await fileToImageDataUrl(file));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not attach the image");
+    } finally {
+      setBusy(false);
+      if (inputRef.current) inputRef.current.value = "";
+    }
+  };
+
+  return (
+    <div>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => void pick(e.target.files?.[0])}
+      />
+      {image ? (
+        <div className="relative inline-block">
+          <img src={image} alt="Attached screenshot" className="max-h-32 rounded-xl border border-gold/30" />
+          <button
+            type="button"
+            onClick={() => onChange(null)}
+            aria-label="Remove attachment"
+            className="absolute -right-2 -top-2 grid h-6 w-6 place-items-center rounded-full bg-background border border-border text-muted-foreground hover:text-gold"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => inputRef.current?.click()}
+          className="inline-flex items-center gap-1.5 rounded-full border border-gold/30 px-3 py-2 text-[11px] text-foreground/85 disabled:opacity-50"
+        >
+          <ImagePlus className="h-3.5 w-3.5 text-gold/80" /> {busy ? "Processing…" : "Attach screenshot"}
+        </button>
+      )}
+    </div>
+  );
+}
+
+export function MessageImage({ src }: { src: string }) {
+  return (
+    <a href={src} target="_blank" rel="noopener noreferrer" className="block">
+      <img src={src} alt="Attached screenshot" className="mt-1.5 max-h-56 rounded-lg border border-white/10" loading="lazy" />
+    </a>
   );
 }
 
