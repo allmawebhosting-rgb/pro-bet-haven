@@ -9,6 +9,7 @@ import {
 } from "@/lib/requests.functions";
 import { setMemberVipAdmin } from "@/lib/admin.functions";
 import { StatusPill, MessageImage } from "@/components/requests/RequestCenter";
+import { UnlockApprovals } from "@/components/admin/UnlockApprovals";
 
 const KIND_LABEL: Record<RequestKind, string> = {
   upgrade: "VIP upgrade",
@@ -55,6 +56,8 @@ export function RequestsTab() {
         <h1 className="mt-1 font-display text-4xl sm:text-5xl">Member requests.</h1>
         <p className="mt-2 text-sm text-muted-foreground">Upgrade requests, next-game purchases and questions land here.</p>
       </div>
+
+      <UnlockApprovals />
 
       <div className="flex flex-wrap gap-2">
         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as any)} className={selectCls}>
