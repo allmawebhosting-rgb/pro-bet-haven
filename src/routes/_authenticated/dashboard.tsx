@@ -708,6 +708,11 @@ function PickBubble({ p, channelLetter, unseen, isAdmin, isVip }: { p: Predictio
           <div className="mt-2.5 inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
             <Timer className="h-3 w-3 text-gold/70" /> Reveals 30 min before kickoff
           </div>
+          <ShareToReveal
+            id={p.id}
+            message={`🔥 ${p.home_team} vs ${p.away_team} — my fixed pick drops on Aurum Fixed. Join the channel:`}
+            className="mt-4 border-t border-gold/15 pt-3"
+          />
         </div>
       ) : (
         <div className="mt-4 rounded-xl border border-gold/20 bg-background/50 px-4 py-3">
