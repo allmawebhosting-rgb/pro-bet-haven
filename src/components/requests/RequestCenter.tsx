@@ -220,6 +220,66 @@ function Thread({ requestId }: { requestId: string }) {
   );
 }
 
+function AttachmentPicker({ image, onChange }: { image: string | null; onChange: (v: string | null) => void }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+
+  const pick = async (file: File | undefined) => {
+    if (!file) return;
+    setBusy(true);
+    try {
+      onChange(await fileToImageDataUrl(file));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not attach the image");
+    } finally {
+      setBusy(false);
+      if (inputRef.current) inputRef.current.value = "";
+    }
+  };
+
+  return (
+    <div>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => void pick(e.target.files?.[0])}
+      />
+      {image ? (
+        <div className="relative inline-block">
+          <img src={image} alt="Attached screenshot" className="max-h-32 rounded-xl border border-gold/30" />
+          <button
+            type="button"
+            onClick={() => onChange(null)}
+            aria-label="Remove attachment"
+            className="absolute -right-2 -top-2 grid h-6 w-6 place-items-center rounded-full bg-background border border-border text-muted-foreground hover:text-gold"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => inputRef.current?.click()}
+          className="inline-flex items-center gap-1.5 rounded-full border border-gold/30 px-3 py-2 text-[11px] text-foreground/85 disabled:opacity-50"
+        >
+          <ImagePlus className="h-3.5 w-3.5 text-gold/80" /> {busy ? "Processing…" : "Attach screenshot"}
+        </button>
+      )}
+    </div>
+  );
+}
+
+export function MessageImage({ src }: { src: string }) {
+  return (
+    <a href={src} target="_blank" rel="noopener noreferrer" className="block">
+      <img src={src} alt="Attached screenshot" className="mt-1.5 max-h-56 rounded-lg border border-white/10" loading="lazy" />
+    </a>
+  );
+}
+
 function QuickAction({ icon: Icon, label, onClick }: { icon: typeof Crown; label: string; onClick: () => void }) {
   return (
     <button onClick={onClick} className="rounded-xl glass px-3 py-3 text-left hover:border-gold/40">
