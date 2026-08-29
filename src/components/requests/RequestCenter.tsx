@@ -205,19 +205,22 @@ function Thread({ requestId }: { requestId: string }) {
           </div>
         ))}
       </div>
-      <div className="border-t border-border/50 p-3 flex gap-2">
-        <input
-          className={inputCls} value={text} maxLength={2000}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter" && text.trim()) sendMut.mutate(); }}
-          placeholder="Reply…"
-        />
-        <button
-          onClick={() => sendMut.mutate()} disabled={!text.trim() || sendMut.isPending}
-          className="rounded-full gold-bg px-4 grid place-items-center disabled:opacity-50"
-        >
-          <Send className="h-4 w-4" />
-        </button>
+      <div className="border-t border-border/50 p-3 space-y-2">
+        <AttachmentPicker image={image} onChange={setImage} />
+        <div className="flex gap-2">
+          <input
+            className={inputCls} value={text} maxLength={2000}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter" && (text.trim() || image)) sendMut.mutate(); }}
+            placeholder="Reply…"
+          />
+          <button
+            onClick={() => sendMut.mutate()} disabled={(!text.trim() && !image) || sendMut.isPending}
+            className="rounded-full gold-bg px-4 grid place-items-center disabled:opacity-50"
+          >
+            <Send className="h-4 w-4" />
+          </button>
+        </div>
       </div>
     </>
   );
