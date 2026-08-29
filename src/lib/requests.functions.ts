@@ -144,7 +144,7 @@ export const listRequestMessagesAdmin = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: rows, error } = await supabaseAdmin
       .from("request_messages")
-      .select("id, sender_role, body, created_at")
+      .select("id, sender_role, body, image_url, created_at")
       .eq("request_id", data.requestId)
       .order("created_at", { ascending: true });
     if (error) throw new Error(error.message);
