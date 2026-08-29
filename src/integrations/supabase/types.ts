@@ -238,6 +238,53 @@ export type Database = {
           },
         ]
       }
+      share_unlocks: {
+        Row: {
+          created_at: string
+          id: string
+          note: string | null
+          prediction_id: string
+          proof_image_url: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["unlock_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          note?: string | null
+          prediction_id: string
+          proof_image_url?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["unlock_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          note?: string | null
+          prediction_id?: string
+          proof_image_url?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["unlock_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "share_unlocks_prediction_id_fkey"
+            columns: ["prediction_id"]
+            isOneToOne: false
+            referencedRelation: "predictions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       site_settings: {
         Row: {
           accent_color: string
@@ -307,6 +354,7 @@ export type Database = {
       prediction_tier: "free" | "vip"
       request_kind: "upgrade" | "next_game" | "general"
       request_status: "open" | "answered" | "closed"
+      unlock_status: "pending" | "approved" | "rejected"
       user_status: "active" | "disabled"
     }
     CompositeTypes: {
@@ -442,6 +490,7 @@ export const Constants = {
       prediction_tier: ["free", "vip"],
       request_kind: ["upgrade", "next_game", "general"],
       request_status: ["open", "answered", "closed"],
+      unlock_status: ["pending", "approved", "rejected"],
       user_status: ["active", "disabled"],
     },
   },
