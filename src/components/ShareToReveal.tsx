@@ -43,7 +43,8 @@ export function ShareToReveal({
   message: string;
   className?: string;
 }) {
-  const { unlock } = useShareUnlocked(id);
+  const { unlocked, unlock } = useShareUnlocked(id);
+  const { open } = useRequestCenter();
   const url = typeof window !== "undefined" ? window.location.origin : "";
   const text = `${message}\n\n${url}`;
 
