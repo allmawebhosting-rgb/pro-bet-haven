@@ -16,6 +16,7 @@ import { amIAdmin, getChannelPicks, markTourCompleted, updateLastSeen } from "@/
 import { AdminComposer } from "@/components/channel/AdminComposer";
 import { RequestCenterProvider, useRequestCenter } from "@/components/requests/RequestCenter";
 import { SPORT_LABEL, sportLabel, type Sport } from "@/lib/sports";
+import { ShareToReveal, useShareUnlocked } from "@/components/ShareToReveal";
 
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -545,7 +546,8 @@ function NextMatchCard({ p, isVip, onZero }: { p: Prediction; isVip: boolean; on
   const now = Date.now();
   const kickoffTime = new Date(p.kickoff_at).getTime();
   const minutesUntilKickoff = (kickoffTime - now) / (1000 * 60);
-  const freePredictionHidden = p.tier === "free" && minutesUntilKickoff > 30;
+  const { unlocked: shareUnlocked } = useShareUnlocked(p.id);
+  const freePredictionHidden = p.tier === "free" && minutesUntilKickoff > 30 && !shareUnlocked;
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -612,13 +614,20 @@ function NextMatchCard({ p, isVip, onZero }: { p: Prediction; isVip: boolean; on
           </span>
           {p.odds != null && <span className="font-mono text-xs text-gold">ODDS {p.odds}</span>}
         </div>
-        {(locked || freePredictionHidden) && (
+        {freePredictionHidden && (
+          <ShareToReveal
+            id={p.id}
+            message={`🔥 Next game on Aurum Fixed — ${p.home_team} vs ${p.away_team}. Join the channel:`}
+            className="mt-4 text-center"
+          />
+        )}
+        {locked && (
           <div className="text-center">
             <RequestCta
               kind="next_game"
               subject="Buy the next game"
               draft={`I want to buy the next game (kickoff ${new Date(p.kickoff_at).toLocaleString()}).`}
-              label={locked ? "Unlock this match" : "Reveal early"}
+              label="Unlock this match"
               className="mt-4 inline-flex items-center gap-1.5 rounded-full gold-bg px-5 py-2.5 text-[11px] font-semibold shadow-[0_10px_28px_-12px_var(--gold)]"
             />
           </div>
@@ -651,7 +660,8 @@ function PickBubble({ p, channelLetter, unseen, isAdmin, isVip }: { p: Predictio
   const now = Date.now();
   const kickoffTime = new Date(p.kickoff_at).getTime();
   const minutesUntilKickoff = (kickoffTime - now) / (1000 * 60);
-  const freePredictionHidden = p.tier === "free" && minutesUntilKickoff > 30 && !isAdmin;
+  const { unlocked: shareUnlocked } = useShareUnlocked(p.id);
+  const freePredictionHidden = p.tier === "free" && minutesUntilKickoff > 30 && !isAdmin && !shareUnlocked;
   return (
     <MessageShell channelLetter={channelLetter} tone="fixed">
       <div className="flex items-center gap-2 flex-wrap">
@@ -708,6 +718,11 @@ function PickBubble({ p, channelLetter, unseen, isAdmin, isVip }: { p: Predictio
           <div className="mt-2.5 inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
             <Timer className="h-3 w-3 text-gold/70" /> Reveals 30 min before kickoff
           </div>
+          <ShareToReveal
+            id={p.id}
+            message={`🔥 ${p.home_team} vs ${p.away_team} — my fixed pick drops on Aurum Fixed. Join the channel:`}
+            className="mt-4 border-t border-gold/15 pt-3"
+          />
         </div>
       ) : (
         <div className="mt-4 rounded-xl border border-gold/20 bg-background/50 px-4 py-3">
