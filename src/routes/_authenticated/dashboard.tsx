@@ -730,6 +730,15 @@ function PickBubble({ p, channelLetter, unseen, isAdmin, isVip }: { p: Predictio
         <div className="mt-4 rounded-xl border border-gold/20 bg-background/50 px-4 py-3">
           <div className="text-[9px] uppercase tracking-[0.3em] text-gold/70">Prediction</div>
           <div className="mt-1 font-display text-2xl gold-text leading-tight">{p.prediction}</div>
+          {shareGate && shareUnlocked && (
+            <div className="mt-3 text-center">
+              <ShareToReveal
+                proofOnly
+                id={p.id}
+                message={`🔥 ${p.home_team} vs ${p.away_team} — my fixed pick drops on Aurum Fixed. Join the channel:`}
+              />
+            </div>
+          )}
           <div className="mt-2.5 flex items-center justify-between text-[11px]">
             <span className="text-muted-foreground">
               {p.odds != null ? <>Odds <b className="text-gold font-semibold tabular-nums">{p.odds}</b></> : <>&nbsp;</>}

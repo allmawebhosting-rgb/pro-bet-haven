@@ -139,21 +139,7 @@ export function ShareToReveal({
           <Link2 className="h-3.5 w-3.5 text-gold/80" /> Copy link
         </button>
       </div>
-      {unlocked && (
-        <button
-          type="button"
-          onClick={() =>
-            open({
-              kind: "general",
-              subject: "Share proof",
-              draft: `I shared the pick — screenshot attached.\n\n${message}`,
-            })
-          }
-          className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-gold/40 bg-gold/10 px-4 py-2 text-[11px] font-semibold text-gold"
-        >
-          <Camera className="h-3.5 w-3.5" /> Send proof screenshot to admin
-        </button>
-      )}
+      {proofButton}
     </div>
   );
 }
