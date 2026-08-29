@@ -8,7 +8,7 @@ import {
   type RequestKind, type RequestStatus,
 } from "@/lib/requests.functions";
 import { setMemberVipAdmin } from "@/lib/admin.functions";
-import { StatusPill } from "@/components/requests/RequestCenter";
+import { StatusPill, MessageImage } from "@/components/requests/RequestCenter";
 
 const KIND_LABEL: Record<RequestKind, string> = {
   upgrade: "VIP upgrade",
@@ -171,6 +171,7 @@ function AdminThread({ requestId }: { requestId: string }) {
               m.sender_role === "admin" ? "gold-bg text-primary-foreground" : "glass"
             }`}>
               {m.body}
+              {m.image_url && <MessageImage src={m.image_url} />}
               <div className="mt-1 text-[10px] opacity-70">
                 {new Date(m.created_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
               </div>

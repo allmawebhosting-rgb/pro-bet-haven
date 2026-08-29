@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
-import { MessageCircle, Send, Share2, Link2 } from "lucide-react";
+import { MessageCircle, Send, Share2, Link2, Camera } from "lucide-react";
 import { toast } from "sonner";
+import { useRequestCenter } from "@/components/requests/RequestCenter";
 
 const EVENT = "share-unlock-changed";
 const key = (id: string) => `share-unlocked:${id}`;
