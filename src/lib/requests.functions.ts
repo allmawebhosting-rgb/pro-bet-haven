@@ -39,10 +39,11 @@ async function assertAdmin(supabase: any, userId: string) {
 
 export const createRequest = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { kind: RequestKind; subject: string; body: string }) => d)
+  .inputValidator((d: { kind: RequestKind; subject: string; body: string; imageUrl?: string }) => d)
   .handler(async ({ data, context }) => {
     const subject = cleanSubject(data.subject);
-    const body = cleanBody(data.body);
+    const imageUrl = cleanImage(data.imageUrl);
+    const body = cleanBody(data.body, !!imageUrl);
     const { data: req, error } = await context.supabase
       .from("member_requests")
       .insert({ user_id: context.userId, kind: data.kind, subject })
@@ -52,7 +53,7 @@ export const createRequest = createServerFn({ method: "POST" })
 
     const { error: msgErr } = await context.supabase
       .from("request_messages")
-      .insert({ request_id: req.id, sender_id: context.userId, sender_role: "member", body });
+      .insert({ request_id: req.id, sender_id: context.userId, sender_role: "member", body, image_url: imageUrl });
     if (msgErr) throw new Error(msgErr.message);
     return { id: req.id as string };
   });
