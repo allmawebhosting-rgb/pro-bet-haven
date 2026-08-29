@@ -123,9 +123,10 @@ export const amIAdmin = createServerFn({ method: "GET" })
 export const getChannelPicks = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const [{ data: profile }, { data: isAdmin }] = await Promise.all([
+    const [{ data: profile }, { data: isAdmin }, { data: unlocks }] = await Promise.all([
       context.supabase.from("profiles").select("channel, is_vip").eq("id", context.userId).maybeSingle(),
       context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" }),
+      context.supabase.from("share_unlocks").select("prediction_id, status").eq("user_id", context.userId),
     ]);
     if (!profile) return [];
 
@@ -135,11 +136,26 @@ export const getChannelPicks = createServerFn({ method: "GET" })
       .order("release_at", { ascending: true });
     if (error) throw new Error(error.message);
 
+    const unlockBy = new Map((unlocks ?? []).map((u) => [u.prediction_id, u.status as string]));
     const canSeeVip = !!isAdmin || !!profile.is_vip;
+    const now = Date.now();
+
     return (data ?? []).map((p) => {
+      const unlockStatus = (unlockBy.get(p.id) ?? "none") as "none" | "pending" | "approved" | "rejected";
       const locked = !canSeeVip && p.tier === "vip";
-      if (!locked) return { ...p, locked: false };
-      // Never ship the tip itself to a member who hasn't unlocked VIP.
-      return { ...p, locked: true, prediction: "", odds: null, confidence: 0 };
+      if (locked) {
+        // Never ship the tip itself to a member who hasn't unlocked VIP.
+        return { ...p, locked: true, shareLocked: false, unlockStatus, prediction: "", odds: null, confidence: 0 };
+      }
+
+      const minutesToKickoff = (new Date(p.kickoff_at).getTime() - now) / 60000;
+      // Free picks stay hidden until 30 min before start, unless an admin
+      // approved the member's share proof.
+      const shareLocked =
+        !isAdmin && p.tier === "free" && minutesToKickoff > 30 && unlockStatus !== "approved";
+      if (shareLocked) {
+        return { ...p, locked: false, shareLocked: true, unlockStatus, prediction: "", odds: null, confidence: 0 };
+      }
+      return { ...p, locked: false, shareLocked: false, unlockStatus };
     });
   });
