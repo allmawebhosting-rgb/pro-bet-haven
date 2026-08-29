@@ -76,7 +76,7 @@ export const listRequestMessages = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: rows, error } = await context.supabase
       .from("request_messages")
-      .select("id, sender_role, body, created_at")
+      .select("id, sender_role, body, image_url, created_at")
       .eq("request_id", data.requestId)
       .order("created_at", { ascending: true });
     if (error) throw new Error(error.message);
@@ -85,9 +85,10 @@ export const listRequestMessages = createServerFn({ method: "POST" })
 
 export const postMessage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { requestId: string; body: string }) => d)
+  .inputValidator((d: { requestId: string; body: string; imageUrl?: string }) => d)
   .handler(async ({ data, context }) => {
-    const body = cleanBody(data.body);
+    const imageUrl = cleanImage(data.imageUrl);
+    const body = cleanBody(data.body, !!imageUrl);
     const { data: req, error: reqErr } = await context.supabase
       .from("member_requests")
       .select("id, user_id")
